@@ -29,7 +29,8 @@ $has_plant_entries => 0
 $hidap_enabled => undef
 $folder_name => undef
 $folder_id => undef
-
+$individual_plant_tracking => undef
+$plants_per_plot => undef
 </%args>
 
 <& /util/import_javascript.mas, classes => [ 'jquery.iframe-post-form', 'CXGN.Trial' , 'jstree/dist/jstree', 'CXGN.BreedersToolbox.HTMLSelect' ] &>
@@ -301,6 +302,16 @@ print STDERR "Check 7 (mason) : ".(time() - $start_time)."\n";
 
 % }
 
+<&| /page/info_section.mas, id => "plant_tracking", title => "Track Individual Plants", collapsible => 1, collapsed => 1, subtitle=>'[<a id="enable_individual_plants_tracking">Enable individual plant tracking</a>]' &>
+
+% if ($individual_plant_tracking) { 
+Individual Plant Tracking enabled.
+% }
+% else { 
+Individual Plant Tracking not enabled.
+%}
+  
+</&>
 
 <&| /page/info_section.mas, id => "physical_layout", title=>"Physical Trial Layout", collapsible=>1, collapsed => 1, subtitle=>'[<a id="upload_trial_coords_link">Upload trial coordinates</a>]' &>
 
@@ -469,7 +480,7 @@ print STDERR "Check 7 (mason) : ".(time() - $start_time)."\n";
 </div>
 
 <div id="create_plant_entries_dialog"> 
-<input id="plants_per_plot" value="<% $plant_per_plot %>"</input>
+<input id="plants_per_plot" value="<% $plants_per_plot %>"</input>
 </div>
 
 <div id="tablet_field_layout_saved_dialog_message" title="Field book layout file" style="display:none;">
