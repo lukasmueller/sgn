@@ -1959,6 +1959,206 @@ sub traits_single  : Chained('brapi') PathPart('traits') CaptureArgs(1) {
 
 =cut
 
+sub sgn_maps_list : Chained('brapi') PathPart('sgnmaps') Args(0) : ActionClass('REST') { }
+
+sub sgn_maps_list_POST {
+    my $self = shift;
+    my $c = shift;
+    my $auth = _authenticate_user($c);
+    my $status = $c->stash->{status};
+    my @status = @$status;
+
+    $c->stash->{rest} = {status => \@status};
+}
+
+sub sgn_maps_list_GET {
+    my $self = shift;
+    my $c = shift;
+    #my $auth = _authenticate_user($c);
+    my $status = $c->stash->{status};
+    my @status = @$status;
+
+    my $sgn = $c->dbic_schema("SGN::Schema");
+
+    my $rs = $sgn->resultset("Map")->search({});
+
+    my @data;
+    while (my $row = $rs->next()) {
+      my %map_info;
+    	print STDERR "Retrieving map info for ".$row->name()." ID:".$row->nd_protocol_id()."\n";
+
+      my $lg_group_rs = $sgn->resultset("LinkageGroup")->search( { map_id => $row->map_id() });
+      my $lg_count = $lg_group_rs->count();
+
+    	%map_info = (
+    	    mapId =>  $row->map_id(),
+    	    name => $row->short_name(),
+	    species => '',
+    	    type => "",
+    	    unit => $row->units(),
+    	    markerCount => undef,
+    	    publishedDate => undef,
+    	    comments => "",
+    	    linkageGroupCount => $lg_count,
+    	    );
+
+        push @data, \%map_info;
+    }
+
+    my $total_count = scalar(@data);
+    my $start = $c->stash->{page_size}*($c->stash->{current_page}-1);
+    my $end = $c->stash->{page_size}*$c->stash->{current_page};
+    my @data_window = splice @data, $start, $end;
+
+    my %result = (data => \@data_window);
+    my %metadata = (pagination=>pagination_response($total_count, $c->stash->{page_size}, $c->stash->{current_page}), status=>\@status);
+    my %response = (metadata=>\%metadata, result=>\%result);
+    $c->stash->{rest} = \%response;
+}
+
+=head2 brapi/v1/maps/<map_id>
+
+ Usage: To retrieve details for a specific map_id
+ Desc:
+ Return JSON example:
+        {
+            "metadata" : {
+                "pagination" : {
+                    "pageSize": 30,
+                    "currentPage": 2,
+                    "totalCount": 40,
+                    "totalPages": 2
+                }
+                "status" : []
+            },
+            "result": {
+                "mapId": "id",
+                "name": "Some map",
+                "type": "Genetic",
+                "unit": "cM",
+                "linkageGroups": [
+                    {
+                        "linkageGroupId": 1,
+                        "numberMarkers": 100000,
+                        "maxPosition": 10000000
+                    },
+                    {
+                        "linkageGroupId": 2,
+                        "numberMarkers": 1247,
+                        "maxPostion": 12347889
+                    }
+                ]
+            }
+        }
+ Args:
+ Side Effects:
+
+=cut
+
+sub sgn_maps_single : Chained('brapi') PathPart('sgn_maps') CaptureArgs(1) {
+    my $self = shift;
+    my $c = shift;
+    my $map_id = shift;
+
+    $c->stash->{map_id} = $map_id;
+}
+
+
+sub sgn_maps_details : Chained('sgn_maps_single') PathPart('') Args(0) : ActionClass('REST') { }
+
+sub sgn_maps_details_POST {
+    my $self = shift;
+    my $c = shift;
+    my $auth = _authenticate_user($c);
+    my $status = $c->stash->{status};
+    my @status = @$status;
+
+    $c->stash->{rest} = {status => \@status};
+}
+
+sub sgn_maps_details_GET {
+    my $self = shift;
+    my $c = shift;
+
+    my $status = $c->stash->{status};
+    my @status = @$status;
+    my $params = $c->req->params();
+    my $total_count = 0;
+
+    my %chrs;
+    my %markers;
+    my @ordered_refmarkers;
+    
+    while (my $profile = $lg_rs->next()) {
+    }
+
+
+    %map_info = (
+      mapId =>  $rs->nd_protocol_id(),
+      name => $rs->name(),
+      type => "physical",
+      unit => "bp",
+      linkageGroups => \@data_window,
+    );
+
+    my %metadata = (pagination=>pagination_response($total_count, $c->stash->{page_size}, $c->stash->{current_page}), status=>\@status);
+    my %response = (metadata=>\%metadata, result=>\%map_info);
+    $c->stash->{rest} = \%response;
+}
+
+
+
+
+
+
+
+=head2 brapi/v1/maps?species=speciesId
+
+ Usage: To retrieve a list of all maps available in the database.
+ Desc:
+ Return JSON example:
+        {
+            "metadata" : {
+                "pagination" : {
+                    "pageSize": 30,
+                    "currentPage": 2,
+                    "totalCount": 40,
+                    "totalPages": 2
+                }
+                "status" : []
+            },
+            "result": {
+                "data" : [
+                    {
+                        "mapId": 1,
+                        "name": "Some Map",
+                        "species": "Some species",
+                        "type": "Genetic",
+                        "unit": "cM",
+                        "publishedDate": "2008-04-16",
+                        "markerCount": 1000,
+                        "linkageGroupCount": 7,
+                        "comments": "This map contains ..."
+                    },
+                    {
+                        "mapId": 2,
+                        "name": "Some Other map",
+                        "species": "Some Species",
+                        "type": "Genetic",
+                        "unit": "cM",
+                        "publishedDate": "2009-01-12",
+                        "markerCount": 1501,
+                        "linkageGroupCount": 7,
+                        "comments": "this is blah blah"
+                    }
+                ]
+            }
+        }
+ Args:
+ Side Effects:
+
+=cut
+
 sub maps_list : Chained('brapi') PathPart('maps') Args(0) : ActionClass('REST') { }
 
 sub maps_list_POST {
