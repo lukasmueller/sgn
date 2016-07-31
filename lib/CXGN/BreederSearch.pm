@@ -149,8 +149,8 @@ sub refresh_matviews {
     return { error => 'Wizard update already in progress . . . ' };
   }
   else {
-    my $connect = "SELECT dblink_connect_u('dbname=".$self->dbname."')";
-    my $send_query = "SELECT dblink_send_query('SELECT refresh_materialized_views()')";
+    my $connect = "SELECT dblink_connect_u('async','dbname=".$self->dbname."')";
+    my $send_query = "SELECT dblink_send_query('async','SELECT refresh_materialized_views()')";
 
     $self->dbh->do($connect);
     $h = $self->dbh->do($send_query);
@@ -199,7 +199,8 @@ sub get_phenotype_info {
     my $rep_type_id = $self->get_stockprop_type_id("replicate");
     my $block_number_type_id = $self -> get_stockprop_type_id("block");
     my $year_type_id = $self->get_projectprop_type_id("project year");
-
+    my $plot_type_id = $self->get_stock_type_id("plot");
+    my $accession_type_id = $self->get_stock_type_id("accession");
 
     my @where_clause = ();
     if ($accession_sql) { push @where_clause,  "stock.stock_id in ($accession_sql)"; }
@@ -210,6 +211,7 @@ sub get_phenotype_info {
 
     if (@where_clause>0) {
 	$where_clause .= $rep_type_id ? "WHERE (stockprop.type_id = $rep_type_id OR stockprop.type_id IS NULL) " : "WHERE stockprop.type_id IS NULL";
+	$where_clause .= "AND plot.type_id = $plot_type_id AND stock.type_id = $accession_type_id";
 	$where_clause .= $block_number_type_id  ? " AND (block_number.type_id = $block_number_type_id OR block_number.type_id IS NULL)" : " AND block_number.type_id IS NULL";
 	$where_clause .= $year_type_id ? " AND projectprop.type_id = $year_type_id" :"" ;
 	$where_clause .= " AND " . (join (" AND " , @where_clause));
@@ -218,7 +220,7 @@ sub get_phenotype_info {
     }
 
     my $order_clause = " order by project.name, plot.uniquename";
-    my $q = "SELECT projectprop.value, project.name, stock.uniquename, nd_geolocation.description, cvterm.name, phenotype.value, plot.uniquename, db.name, db.name ||  ':' || dbxref.accession AS accession, stockprop.value, block_number.value AS rep, cvterm.cvterm_id, project.project_id, nd_geolocation.nd_geolocation_id, stock.stock_id, plot.stock_id
+    my $q = "SELECT projectprop.value, project.name, stock.uniquename, nd_geolocation.description, cvterm.name, phenotype.value, plot.uniquename, db.name, db.name ||  ':' || dbxref.accession AS accession, stockprop.value, block_number.value AS rep, cvterm.cvterm_id, project.project_id, nd_geolocation.nd_geolocation_id, stock.stock_id, plot.stock_id, phenotype.uniquename
              FROM stock as plot JOIN stock_relationship ON (plot.stock_id=subject_id)
              JOIN stock ON (object_id=stock.stock_id)
              LEFT JOIN stockprop ON (plot.stock_id=stockprop.stock_id)
@@ -242,8 +244,8 @@ sub get_phenotype_info {
     $h->execute();
 
     my $result = [];
-    while (my ($year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id) = $h->fetchrow_array()) {
-	push @$result, [ $year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id ];
+    while (my ($year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename) = $h->fetchrow_array()) {
+	push @$result, [ $year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename ];
 
     }
     #print STDERR Dumper $result;
@@ -305,9 +307,10 @@ sub get_extended_phenotype_info_matrix {
     my $accession_sql = shift;
     my $trial_sql = shift;
     my $trait_sql = shift;
+    my $include_timestamp = shift // 0;
 
     my $data = $self->get_phenotype_info($accession_sql, $trial_sql, $trait_sql);
-    #data contains [$year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id]
+    #data contains [$year, $project_name, $stock_name, $location, $trait, $value, $plot_name, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename]
 
     my %plot_data;
     my %traits;
@@ -315,32 +318,43 @@ sub get_extended_phenotype_info_matrix {
     print STDERR "No of lines retrieved: ".scalar(@$data)."\n";
     foreach my $d (@$data) {
 
-	my ($year, $project_name, $stock_name, $location, $trait, $trait_data, $plot, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id) = @$d;
+        my ($year, $project_name, $stock_name, $location, $trait, $trait_data, $plot, $cv_name, $cvterm_accession, $rep, $block_number, $trait_id, $project_id, $location_id, $stock_id, $plot_id, $phenotype_uniquename) = @$d;
 
-	my $cvterm = $d->[4]."|".$d->[8];
-	if (!defined($rep)) { $rep = ""; }
-	$plot_data{$plot}->{$cvterm} = $trait_data;
-	$plot_data{$plot}->{metadata} = {
-	    rep => $rep,
-	    studyName => $project_name,
-	    germplasmName => $stock_name,
-	    locationName => $location,
-	    blockNumber => $block_number,
-	    plotName => $plot,
-	    cvterm => $cvterm,
-	    trait_data => $trait_data,
-	    year => $year,
-      cvterm_id => $trait_id,
-      studyDbId => $project_id, 
-      locationDbId => $location_id,
-      germplasmDbId => $stock_id, 
-      plotDbId => $plot_id
-	};
-	$traits{$cvterm}++;
+        my $cvterm = $d->[4]."|".$d->[8];
+        if ($include_timestamp) {
+            my ($p1, $p2) = split /date: /, $phenotype_uniquename;
+            my ($timestamp, $p3) = split /  operator/, $p2;
+            if( $timestamp =~ m/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\S)(\d{4})/) {
+                $plot_data{$plot}->{$cvterm} = "$trait_data,$timestamp";
+            } else {
+                $plot_data{$plot}->{$cvterm} = $trait_data;
+            }
+        } else {
+            $plot_data{$plot}->{$cvterm} = $trait_data;
+        }
+
+        if (!defined($rep)) { $rep = ""; }
+        $plot_data{$plot}->{metadata} = {
+            rep => $rep,
+            studyName => $project_name,
+            germplasmName => $stock_name,
+            locationName => $location,
+            blockNumber => $block_number,
+            plotName => $plot,
+            cvterm => $cvterm,
+            trait_data => $trait_data,
+            year => $year,
+            cvterm_id => $trait_id,
+            studyDbId => $project_id,
+            locationDbId => $location_id,
+            germplasmDbId => $stock_id,
+            plotDbId => $plot_id
+        };
+        $traits{$cvterm}++;
     }
 
     my @info = ();
-    my $line = join "\t", qw | year studyDbId studyName locationDbId locationName germplasmDbId germplasmName plotDbId plotName rep blockNumber |;
+    my $line = join "\t", qw | studyYear studyDbId studyName locationDbId locationName germplasmDbId germplasmName plotDbId plotName rep blockNumber |;
 
     # generate header line
     #
@@ -394,24 +408,28 @@ sub get_genotype_info {
     my $self = shift;
     my $accession_idref = shift;
     my $protocol_id = shift;
+    my $snp_genotype_id = shift || '76434';
     my @accession_ids = @$accession_idref;
-    my ($q, @result);
-
-    print STDERR "accession sql= @accession_ids \n";
-    print STDERR "protocol id= $protocol_id \n";
+    my ($q, @result, $protocol_name);
 
     if (@accession_ids) {
-      $q = "SELECT uniquename, value FROM (SELECT stock.uniquename, genotypeprop.value, row_number() over (partition by stock.uniquename order by genotypeprop.genotype_id) as rownum from genotypeprop join nd_experiment_genotype USING (genotype_id) JOIN nd_experiment_protocol USING(nd_experiment_id) JOIN nd_experiment_stock USING(nd_experiment_id) JOIN stock USING(stock_id) WHERE stock.stock_id in (@{[join',', ('?') x @accession_ids]}) AND nd_experiment_protocol.nd_protocol_id=?) tmp WHERE rownum <2";
+      $q = "SELECT name, uniquename, value FROM (SELECT nd_protocol.name, stock.uniquename, genotypeprop.value, row_number() over (partition by stock.uniquename order by genotypeprop.genotype_id) as rownum from genotypeprop join nd_experiment_genotype USING (genotype_id) JOIN nd_experiment_protocol USING(nd_experiment_id) JOIN nd_protocol USING(nd_protocol_id) JOIN nd_experiment_stock USING(nd_experiment_id) JOIN stock USING(stock_id) WHERE genotypeprop.type_id = ? AND stock.stock_id in (@{[join',', ('?') x @accession_ids]}) AND nd_experiment_protocol.nd_protocol_id=?) tmp WHERE rownum <2";
     }
-    print "QUERY: $q\n\n";
+    print STDERR "QUERY: $q\n\n";
 
     my $h = $self->dbh()->prepare($q);
-    $h->execute(@accession_ids,$protocol_id);
+    $h->execute($snp_genotype_id, @accession_ids,$protocol_id);
 
-    while (my ($uniquename,$genotype_string) = $h->fetchrow_array()) {
+
+    while (my($name,$uniquename,$genotype_string) = $h->fetchrow_array()) {
       push @result, [ $uniquename, $genotype_string ];
+      $protocol_name = $name;
     }
-    return \@result;
+
+    return {
+      protocol_name => $protocol_name,
+      genotypes => \@result
+    };
 }
 
 
