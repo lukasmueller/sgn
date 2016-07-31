@@ -2050,9 +2050,9 @@ sub traits_single  : Chained('brapi') PathPart('traits') CaptureArgs(1) {
 
 =cut
 
-sub sgn_maps_list : Chained('brapi') PathPart('sgnmaps') Args(0) : ActionClass('REST') { }
+sub sgn_maps : Chained('brapi') PathPart('sgn_maps') Args(0) : ActionClass('REST') { }
 
-sub sgn_maps_list_POST {
+sub sgn_maps_POST {
     my $self = shift;
     my $c = shift;
     my $auth = _authenticate_user($c);
@@ -2062,35 +2062,32 @@ sub sgn_maps_list_POST {
     $c->stash->{rest} = {status => \@status};
 }
 
-sub sgn_maps_list_GET {
+sub sgn_maps_GET {
     my $self = shift;
     my $c = shift;
     #my $auth = _authenticate_user($c);
     my $status = $c->stash->{status};
     my @status = @$status;
 
-    my $sgn = $c->dbic_schema("SGN::Schema");
+    require CXGN::Cview::MapFactory;
+    
+    my $mf = CXGN::Cview::MapFactory->new($c->dbc->dbh, $c);
 
-    my $rs = $sgn->resultset("Map")->search({});
+    my @maps = $mf->system_maps();
 
+    my %map_info;
     my @data;
-    while (my $row = $rs->next()) {
-      my %map_info;
-    	print STDERR "Retrieving map info for ".$row->name()." ID:".$row->nd_protocol_id()."\n";
-
-      my $lg_group_rs = $sgn->resultset("LinkageGroup")->search( { map_id => $row->map_id() });
-      my $lg_count = $lg_group_rs->count();
-
+    foreach my $map (@maps) { 
     	%map_info = (
-    	    mapId =>  $row->map_id(),
-    	    name => $row->short_name(),
-	    species => '',
-    	    type => "",
-    	    unit => $row->units(),
-    	    markerCount => undef,
+    	    mapId =>  $map->get_map_id(),
+    	    name => $map->get_short_name(),
+	    species => $map->get_common_name(),
+    	    type => $map->get_type(),
+    	    unit => $map->get_units(),
+    	    markerCount => $map->get_marker_count(),
     	    publishedDate => undef,
-    	    comments => "",
-    	    linkageGroupCount => $lg_count,
+    	    comments => $map->get_abstract(),
+    	    linkageGroupCount => $map->get_chromosome_count(),
     	    );
 
         push @data, \%map_info;
@@ -2146,61 +2143,130 @@ sub sgn_maps_list_GET {
 
 =cut
 
-sub sgn_maps_single : Chained('brapi') PathPart('sgn_maps') CaptureArgs(1) {
+sub sgn_map_single : Chained('brapi') PathPart('sgn_maps') CaptureArgs(1) {
     my $self = shift;
     my $c = shift;
     my $map_id = shift;
 
-    $c->stash->{map_id} = $map_id;
-}
-
-
-sub sgn_maps_details : Chained('sgn_maps_single') PathPart('') Args(0) : ActionClass('REST') { }
-
-sub sgn_maps_details_POST {
-    my $self = shift;
-    my $c = shift;
-    my $auth = _authenticate_user($c);
-    my $status = $c->stash->{status};
-    my @status = @$status;
-
-    $c->stash->{rest} = {status => \@status};
-}
-
-sub sgn_maps_details_GET {
-    my $self = shift;
-    my $c = shift;
-
-    my $status = $c->stash->{status};
-    my @status = @$status;
-    my $params = $c->req->params();
-    my $total_count = 0;
-
-    my %chrs;
-    my %markers;
-    my @ordered_refmarkers;
+    require CXGN::Cview::Map;
     
-    while (my $profile = $lg_rs->next()) {
+    my $mf = CXGN::Cview::MapFactory->new($c->dbc->dbh);
+    
+    my $map = $mf->create( { map_id => $map_id });
+    
+    $c->stash->{map_id} = $map_id;
+    $c->stash->{map} = $map;
+}
+
+
+sub sgn_map_detail : Chained('sgn_map_single') PathPart('') Args(0) { 
+    my $self = shift;
+    my $c = shift;
+
+    if (!defined($c->stash->{map})) { 
+	$c->stash->{rest} = { 
+	    metadata => {
+		pagination => {},
+		status => { "error" => "The specified map does not exist. I am very sorry about this." },
+	    }
+	};
+	print STDERR "The map is not defined. Returning with error.\n";
+	return;
     }
 
 
-    %map_info = (
-      mapId =>  $rs->nd_protocol_id(),
-      name => $rs->name(),
-      type => "physical",
-      unit => "bp",
-      linkageGroups => \@data_window,
-    );
+    my @linkage_groups = ();
+    foreach my $lg ($c->stash->{map}->get_linkage_groups()) { 
+	my %info = (
+	    linkageGroupId => $lg->get_name(),
+	    numberMarkers => $lg ->get_markers(),
+	    maxPosition => $lg->get_end_cM(),
+	    );
 
-    my %metadata = (pagination=>pagination_response($total_count, $c->stash->{page_size}, $c->stash->{current_page}), status=>\@status);
-    my %response = (metadata=>\%metadata, result=>\%map_info);
-    $c->stash->{rest} = \%response;
+	push @linkage_groups, \%info;
+    }
+    
+
+    my $result = {
+	mapId => $c->stash->{map}->get_id(),
+        name => $c->stash->{map}->get_short_name(),
+	type => $c->stash->{map}->get_type(),
+	unit => $c->stash->{map}->get_units(),
+	linkage_groups => \@linkage_groups,
+    };
+    $c->stash->{rest} = { metadata => {}, result => $result };
 }
 
 
+=head2 maps/{mapDbId}/positions
 
+## Genome Map Data [/brapi/v1/maps/{mapDbId}/positions?linkageGroupIdList={linkageGroupId,linkageGroupId}&pageSize={pageSize}&pageNumber={pageNumber}]
 
+Implemented by: Germinate
 
+### Get map data [GET]
+
+markers ordered by linkageGroup and position
+
++ Parameters
+   + mapDbId (required, string, `6`) ... unique id of the map
+   + linkageGroupIdList (optional, comma separated list of strings)
+
++ Response 200 (application/json)
+
+        {
+            "metadata" : { 
+                "pagination" : { "pageSize": 30, "currentPage": 2, "totalCount": 40, "totalPages":2 },
+                "status": [],
+                "datafiles": []
+            },
+            "result": { 
+                "data" : [
+                    {
+                        "markerDbId": 1,
+                        "markerName": "marker1",
+                        "location": "1000",
+                        "linkageGroup": "1A"
+                    }, {
+                        "markerDbId": 2,
+                        "markerName": "marker2",
+                        "location": "1001",
+                        "linkageGroup": "1A"
+                    }
+                ]
+            }
+        }
+
+=cut 
+
+sub sgn_map_positions : Chained('sgn_map_single') PathPart('positions') Args(0) {
+    my $self = shift;
+    my $c = shift;
+
+    my @data = ();
+    foreach my $lg (@{$c->stash->{map}}) { 
+	foreach my $m ($lg->get_markers()) { 
+	    my %marker = (
+		linkageGroup => $lg->get_name(),
+		markerDbId => $m->get_marker_id(),
+		markerName => $m->get_name(),
+		position => $m->get_position(),
+		);
+	    push @data, \%marker;
+	}
+    }
+
+    my @status;
+    my $total_count = scalar(@data);
+    my $start = $c->stash->{page_size}*($c->stash->{current_page}-1);
+    my $end = $c->stash->{page_size}*$c->stash->{current_page};
+    my @data_window = splice @data, $start, $end;
+
+    my %result = (data => \@data_window);
+    my %metadata = (pagination=>pagination_response($total_count, $c->stash->{page_size}, $c->stash->{current_page}), status=>\@status);
+    my %response = (metadata=>\%metadata, result=>\%result);
+    $c->stash->{rest} = \%response;
+}
 
 
 =head2 brapi/v1/maps?species=speciesId
