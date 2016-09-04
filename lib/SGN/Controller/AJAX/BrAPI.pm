@@ -2176,13 +2176,13 @@ sub sgn_map_detail : Chained('sgn_map_single') PathPart('') Args(0) {
 
 
     my @linkage_groups = ();
-    foreach my $lg ($c->stash->{map}->get_linkage_groups()) { 
+    foreach my $lg ($c->stash->{map}->get_chromosomes()) { 
 	my %info = (
 	    linkageGroupId => $lg->get_name(),
-	    numberMarkers => $lg ->get_markers(),
-	    maxPosition => $lg->get_end_cM(),
+	    numberMarkers => scalar(@{$lg ->get_markers_ref()}),
+	    maxPosition => $lg->get_markers_ref()->[-1]->get_offset(),
 	    );
-
+	
 	push @linkage_groups, \%info;
     }
     
