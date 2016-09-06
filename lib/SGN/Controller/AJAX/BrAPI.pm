@@ -2244,13 +2244,13 @@ sub sgn_map_positions : Chained('sgn_map_single') PathPart('positions') Args(0) 
     my $c = shift;
 
     my @data = ();
-    foreach my $lg (@{$c->stash->{map}}) { 
+    foreach my $lg ($c->stash->{map}->get_chromosomes()) { 
 	foreach my $m ($lg->get_markers()) { 
 	    my %marker = (
 		linkageGroup => $lg->get_name(),
-		markerDbId => $m->get_marker_id(),
+		markerDbId => $m->get_id(),
 		markerName => $m->get_name(),
-		position => $m->get_position(),
+		position => $m->get_offset(),
 		);
 	    push @data, \%marker;
 	}
