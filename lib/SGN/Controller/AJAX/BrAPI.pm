@@ -2152,10 +2152,14 @@ sub sgn_map_single : Chained('brapi') PathPart('sgn_maps') CaptureArgs(1) {
     
     my $mf = CXGN::Cview::MapFactory->new($c->dbc->dbh);
     
-    my $map = $mf->create( { map_id => $map_id });
     
+    my $map = $mf->create( { map_id => $map_id });
+
     $c->stash->{map_id} = $map_id;
     $c->stash->{map} = $map;
+
+    print STDERR "CHR COUNT = ".scalar($c->stash->{map}->get_chromosomes())."\n";
+
 }
 
 
@@ -2177,6 +2181,16 @@ sub sgn_map_detail : Chained('sgn_map_single') PathPart('') Args(0) {
 
     my @linkage_groups = ();
     foreach my $lg ($c->stash->{map}->get_chromosomes()) { 
+
+	print STDERR "CHR COUNT = ".scalar($c->stash->{map}->get_chromosomes())."\n";
+
+	eval { 
+	    print STDERR $lg->get_name()."\n";
+	};
+	if ($@) { 
+	    print STDERR "CHROMOSOME $lg has no associated object... $@\n";
+	}
+	   
 	my %info = (
 	    linkageGroupId => $lg->get_name(),
 	    numberMarkers => scalar(@{$lg ->get_markers_ref()}),
@@ -2461,7 +2475,7 @@ sub maps_details_GET {
     my $total_count = 0;
 
     my $snp_genotyping_cvterm_id = SGN::Model::Cvterm->get_cvterm_row($self->bcs_schema, 'snp genotyping', 'genotype_property')->cvterm_id();
-
+    
     # maps are just marker lists associated with specific protocols
     my $rs = $self->bcs_schema()->resultset("NaturalDiversity::NdProtocol")->find( { nd_protocol_id => $c->stash->{map_id} } );
     my %map_info;
