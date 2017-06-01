@@ -2283,6 +2283,36 @@ sub sgn_map_positions : Chained('sgn_map_single') PathPart('positions') Args(0) 
 }
 
 
+sub sgn_map_chromosome : Chained('sgn_map_single') PathPart('markers') Args(0) {
+    my $self = shift;
+    my $c = shift;
+    my $linkageGroup = $c->req->param("linkageGroup"); 
+
+    my @data = ();
+    foreach my $lg ($c->stash->{map}->get_chromosome($linkageGroup)) { 
+    foreach my $m ($lg->get_markers()) { 
+        my %marker = (
+        linkageGroup => $lg->get_name(),
+        markerDbId => $m->get_id(),
+        markerName => $m->get_name(),
+        position => $m->get_offset(),
+        );
+        push @data, \%marker;
+    }
+    }
+
+    my @status;
+    my $total_count = scalar(@data);
+    my $start = $c->stash->{page_size}*($c->stash->{current_page}-1);
+    my $end = $c->stash->{page_size}*$c->stash->{current_page};
+    my @data_window = splice @data, $start, $end;
+
+    my %result = (data => \@data_window);
+    my %metadata = (pagination=>pagination_response($total_count, $c->stash->{page_size}, $c->stash->{current_page}), status=>\@status, name => $c->stash->{map}->get_short_name());
+    my %response = (metadata=>\%metadata, result=>\%result);
+    $c->stash->{rest} = \%response;
+}
+
 =head2 brapi/v1/maps?species=speciesId
 
  Usage: To retrieve a list of all maps available in the database.
