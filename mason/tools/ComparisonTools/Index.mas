@@ -1,0 +1,170 @@
+<h4>Welcome to the Comparison Tool Database!</h4>
+
+<h4>Database Select</h4>
+<select name="comparison_tool_database_select" id="comparison_tool_database_select" class="form-control" />
+    <option value="">local</option>
+    <option value="https://cassbase.org">cassbase.org</option>
+    <option value="https://cassavabase.org">cassavabase.org</option>
+    <option value="https://musabase.org">musabase.org</option>
+    <option value="https://sweetpotatobase.org">sweetpotatobase.org</option>
+    <option value="https://yambase.org">yambase.org</option>
+    <option value="https://fernbase.org">fernbase.org</option>
+    <option value="https://solgenomics.net">solgenomics.net</option>
+    <option value="https://www.crop-diversity.org/mgis">crop-diversity.org</option>
+</select>
+<br/>
+
+<h4>2nd Database Select</h4>
+<select name="comparison_tool_2nd_database_select" id="comparison_tool_2nd_database_select" class="form-control" />
+    <option value="">local</option>
+    <option value="https://cassbase.org">cassbase.org</option>
+    <option value="https://cassavabase.org">cassavabase.org</option>
+    <option value="https://musabase.org">musabase.org</option>
+    <option value="https://sweetpotatobase.org">sweetpotatobase.org</option>
+    <option value="https://yambase.org">yambase.org</option>
+    <option value="https://fernbase.org">fernbase.org</option>
+    <option value="https://solgenomics.net">solgenomics.net</option>
+    <option value="https://www.crop-diversity.org/mgis">crop-diversity.org</option>
+</select>
+<br/>
+
+<input name="comparison_tool_select_property" type="checkbox" value="germplasmDbId" checked /> germplasmDbId
+<input name="comparison_tool_select_property" type="checkbox" value="defaultDisplayName" checked /> defaultDisplayName
+<input name="comparison_tool_select_property" type="checkbox" value="germplasmName" /> germplasmName
+<input name="comparison_tool_select_property" type="checkbox" value="accessionNumber" /> accessionNumber
+<input name="comparison_tool_select_property" type="checkbox" value="germplasmPUI" /> germplasmPUI
+<input name="comparison_tool_select_property" type="checkbox" value="synonyms" /> synonyms
+<input name="comparison_tool_select_property" type="checkbox" value="commonCropName" /> commonCropName
+<input name="comparison_tool_select_property" type="checkbox" value="instituteCode" /> instituteCode
+<input name="comparison_tool_select_property" type="checkbox" value="biologicalStatusOfAccessionCode" /> biologicalStatusOfAccessionCode
+<input name="comparison_tool_select_property" type="checkbox" value="countryOfOriginCode" /> countryOfOriginCode
+<input name="comparison_tool_select_property" type="checkbox" value="genus" /> genus
+<input name="comparison_tool_select_property" type="checkbox" value="species" /> species
+<input name="comparison_tool_select_property" type="checkbox" value="speciesAuthority" /> speciesAuthority
+<input name="comparison_tool_select_property" type="checkbox" value="subtaxa" /> subtaxa
+<input name="comparison_tool_select_property" type="checkbox" value="subtaxaAuthority" /> subtaxaAuthority
+<input name="comparison_tool_select_property" type="checkbox" value="donors" /> donors
+<input name="comparison_tool_select_property" type="checkbox" value="acquisitionDate"/> acquisitionDate
+<br/>
+<br/>
+
+<button name="comparison_tool_submit_button" id="comparison_tool_submit_button" class='btn btn-primary'>
+Submit Button</button>
+
+<hr>
+
+<div id="table_div">
+</div>
+<br/>
+
+<script>
+$(document).ready(function(){
+    $("#comparison_tool_submit_button").click(function(){
+        var checkboxValues = [];
+        $('input[type="checkbox"]:checked').each(function(index, elem) {
+            checkboxValues.push($(elem).val());
+        });
+        //alert(checkboxValues.join(', '));
+        var cassavabase = $('#comparison_tool_database_select').val();
+        $.ajax({
+            type: "POST",
+            url: cassavabase + '/brapi/v1/germplasm-search',
+            data: {
+            },
+            success: function(callback){
+                var cassavabase2 = $('#comparison_tool_2nd_database_select').val();
+                $.ajax({
+                    type: "POST",    
+                    url: cassavabase2 + '/brapi/v1/germplasm-search',
+                    data: {
+                    },
+                    success: function(callback2){
+                        console.log(callback2);
+                        console.log(checkboxValues);
+                        var result = callback.result;
+                        var metadata = callback.metadata;
+                        var data = callback.result.data;
+                        var result2 = callback2.result;
+                        var metadata2 = callback2.metadata;
+                        var data2 = callback2.result.data;
+                        var combineData = new Object();
+                        for (var i = 0; i < data.length; i++) {
+                            var germplasmName = data[i].germplasmName;
+                            var germplasmDbId = data[i].germplasmDbId;
+                            var defaultDisplayName = data[i].defaultDisplayName;
+                            var genus = data[i].genus;
+                            var species = data[i].species; 
+                            combineData[germplasmName] = {};
+                            combineData[germplasmName][cassavabase] = data[i];
+                        }
+                        
+                        for (var i = 0; i < data2.length; i++) {
+                            var germplasmName = data2[i].germplasmName;
+                            var germplasmDbId = data2[i].germplasmDbId;
+                            var defaultDisplayName = data2[i].defaultDisplayName;
+                            var genus = data2[i].genus;
+                            var species = data2[i].species; 
+                            combineData[germplasmName] = {};
+                            combineData[germplasmName][cassavabase2] = data2[i];
+                        }
+                            console.log(combineData)
+                        var selectDatabases = [cassavabase, cassavabase2]
+                        
+                        var html = "<table class='table table-bordered table-hover'><thead><tr><td>'germplasmName'</td><td>'selectedProperties'</td>";
+                        for (var i = 0; i < selectDatabases.length; i++) {
+                        html = html + "<td>" + selectDatabases[i] + "</td>";
+                        }
+                        html = html + "<td>'validaitonTool'</td></tr></thead><tbody>";
+                            for (var germplasmName in combineData) {
+                                html = html + "<tr><td>" + germplasmName + "</td><td>"; 
+                                for (var k=0; k < checkboxValues.length; k++) {
+                                    html = html + checkboxValues[k] + "<br/>";
+                                } 
+                                html = html + "</td>"
+                                
+                        
+                                for (var i=0; i < selectDatabases.length; i++) {
+                                    html = html + "<td>";
+                                    for (var j=0; j < checkboxValues.length; j++) {
+                                        if(combineData[germplasmName][selectDatabases[i]] != undefined){
+                                            html = html + combineData[germplasmName][selectDatabases[i]][checkboxValues[j]] + "<br/>";
+                                        }
+                                    }
+                                    html = html + "</td>"
+                                }
+                                html = html + "</tr>";
+                            }
+                        html = html + "</tbody></table>";
+                        jQuery('#table_div').html(html);
+                    }
+                });
+
+              console.log(callback);
+              var result = callback.result;
+              var metadata = callback.metadata;
+              var data = callback.result.data;
+              
+              var html = "<table class='table table-bordered table-hover'><thead><tr>";
+              for (var i = 0; i < checkboxValues.length; i++) {
+                  html = html + "<td>" + checkboxValues[i] + "</td>";
+              }
+              html = html + "</tr></thead><tbody>";
+                
+              for (var i = 0; i < data.length; i++) {
+                  html = html + "<tr>"; 
+                  for (var j=0; j < checkboxValues.length; j++) {
+                    console.log(data[i]);
+                    console.log(checkboxValues[j])
+                    html = html + "<td>" + data[i][checkboxValues[j]] + "</td>";
+                    }
+                    html = html + "</tr>";
+                }
+                html = html + "</tbody></table>";
+                jQuery('#table_div').html(html);
+                    
+            }
+        });
+    });
+});
+</script>
+
