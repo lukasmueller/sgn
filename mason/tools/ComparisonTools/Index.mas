@@ -1,3 +1,4 @@
+<& /util/import_javascript.mas, classes => [ 'brapi.BrAPI','CXGN.List'] &>
 <h4>Welcome to the Comparison Tool Database!</h4>
 
 <h4>Database Select</h4>
@@ -26,6 +27,15 @@
     <option value="https://solgenomics.net">solgenomics.net</option>
     <option value="https://www.crop-diversity.org/mgis">crop-diversity.org</option>
 </select>
+<br/>
+
+<h4>Assession Select</h4>
+<div id="select_div_id"></div>
+<script type="text/javascript">
+  var list_obj = new CXGN.List();
+  var listhtml = list_obj.listSelect('select_div_id', ['accessions'], "Select an Accession List");
+  jQuery('#select_div_id').html(listhtml);
+</script>
 <br/>
 
 <input name="comparison_tool_select_property" type="checkbox" value="germplasmDbId" checked /> germplasmDbId
@@ -59,112 +69,98 @@ Submit Button</button>
 
 <script>
 $(document).ready(function(){
+    
+    //Onclick event for submitting the seqrch
     $("#comparison_tool_submit_button").click(function(){
+        
+        //Pcking up checkbox values
         var checkboxValues = [];
         $('input[type="checkbox"]:checked').each(function(index, elem) {
             checkboxValues.push($(elem).val());
         });
-        //alert(checkboxValues.join(', '));
+        
+        //Picking up selected accession list
+        var accessionValues = jQuery('#select_div_id_list_select').val();
+        var lo = new CXGN.List();
+        var data = lo.getList(accessionValues);
+        //console.log(data);
+
         var cassavabase = $('#comparison_tool_database_select').val();
-        $.ajax({
-            type: "POST",
-            url: cassavabase + '/brapi/v1/germplasm-search',
-            data: {
-            },
-            success: function(callback){
-                var cassavabase2 = $('#comparison_tool_2nd_database_select').val();
-                $.ajax({
-                    type: "POST",    
-                    url: cassavabase2 + '/brapi/v1/germplasm-search',
-                    data: {
-                    },
-                    success: function(callback2){
-                        console.log(callback2);
-                        console.log(checkboxValues);
-                        var result = callback.result;
-                        var metadata = callback.metadata;
-                        var data = callback.result.data;
-                        var result2 = callback2.result;
-                        var metadata2 = callback2.metadata;
-                        var data2 = callback2.result.data;
-                        var combineData = new Object();
-                        for (var i = 0; i < data.length; i++) {
-                            var germplasmName = data[i].germplasmName;
-                            var germplasmDbId = data[i].germplasmDbId;
-                            var defaultDisplayName = data[i].defaultDisplayName;
-                            var genus = data[i].genus;
-                            var species = data[i].species; 
+        var cassavabase2 = $('#comparison_tool_2nd_database_select').val();
+        
+        var databases = [cassavabase, cassavabase2];
+        var combineData = new Object();
+
+        jQuery.ajax( {
+            url: cassavabase+'/brapi/v1/germplasm-search',
+            method : 'POST',
+            // data : {
+            //     'germplasmNames' : data
+            // },
+            success: function(response1) {
+                jQuery.ajax( {
+                    url: cassavabase2+'/brapi/v1/germplasm-search',
+                    method : 'POST',
+                    // data : {
+                    //     'germplasmNames' : data
+                    // },
+                    success: function(response2) {
+
+                        var germplasm1 = response1.result.data;
+                        var germplasm2 = response2.result.data;
+
+                        for(var i=0; i<germplasm1.length; i++){
+                            var germplasmName = germplasm1[i].germplasmName;
                             combineData[germplasmName] = {};
-                            combineData[germplasmName][cassavabase] = data[i];
+                            combineData[germplasmName][cassavabase] = germplasm1[i];
                         }
-                        
-                        for (var i = 0; i < data2.length; i++) {
-                            var germplasmName = data2[i].germplasmName;
-                            var germplasmDbId = data2[i].germplasmDbId;
-                            var defaultDisplayName = data2[i].defaultDisplayName;
-                            var genus = data2[i].genus;
-                            var species = data2[i].species; 
+                        for(var i=0; i<germplasm2.length; i++){
+                            var germplasmName = germplasm2[i].germplasmName;
                             combineData[germplasmName] = {};
-                            combineData[germplasmName][cassavabase2] = data2[i];
+                            combineData[germplasmName][cassavabase2] = germplasm2[i];
                         }
-                            console.log(combineData)
-                        var selectDatabases = [cassavabase, cassavabase2]
                         
                         var html = "<table class='table table-bordered table-hover'><thead><tr><td>'germplasmName'</td><td>'selectedProperties'</td>";
-                        for (var i = 0; i < selectDatabases.length; i++) {
-                        html = html + "<td>" + selectDatabases[i] + "</td>";
+                        for (var i = 0; i < databases.length; i++) {
+                            html = html + "<td>" + databases[i] + "</td>";
                         }
                         html = html + "<td>'validaitonTool'</td></tr></thead><tbody>";
-                            for (var germplasmName in combineData) {
-                                html = html + "<tr><td>" + germplasmName + "</td><td>"; 
-                                for (var k=0; k < checkboxValues.length; k++) {
-                                    html = html + checkboxValues[k] + "<br/>";
-                                } 
-                                html = html + "</td>"
-                                
-                        
-                                for (var i=0; i < selectDatabases.length; i++) {
-                                    html = html + "<td>";
-                                    for (var j=0; j < checkboxValues.length; j++) {
-                                        if(combineData[germplasmName][selectDatabases[i]] != undefined){
-                                            html = html + combineData[germplasmName][selectDatabases[i]][checkboxValues[j]] + "<br/>";
-                                        }
+                        for (var germplasmName in combineData) {
+                            html = html + "<tr><td>" + germplasmName + "</td><td>"; 
+                            for (var k=0; k < checkboxValues.length; k++) {
+                                html = html + checkboxValues[k] + "<br/>";
+                            } 
+                            html = html + "</td>"
+                                        
+                            for (var i=0; i < databases.length; i++) {
+                                html = html + "<td>";
+                                for (var j=0; j < checkboxValues.length; j++) {
+                                    if(combineData[germplasmName][databases[i]] != undefined){
+                                        html = html + combineData[germplasmName][databases[i]][checkboxValues[j]] + "<br/>";
                                     }
-                                    html = html + "</td>"
                                 }
-                                html = html + "</tr>";
+                                html = html + "</td>"
                             }
+                            html = html + "</tr>";
+                        }
                         html = html + "</tbody></table>";
                         jQuery('#table_div').html(html);
+
+                    },
+                    error: function(response) {
+                        alert("An error occurred reaching "+cassavabase2);
                     }
                 });
-
-              console.log(callback);
-              var result = callback.result;
-              var metadata = callback.metadata;
-              var data = callback.result.data;
-              
-              var html = "<table class='table table-bordered table-hover'><thead><tr>";
-              for (var i = 0; i < checkboxValues.length; i++) {
-                  html = html + "<td>" + checkboxValues[i] + "</td>";
-              }
-              html = html + "</tr></thead><tbody>";
-                
-              for (var i = 0; i < data.length; i++) {
-                  html = html + "<tr>"; 
-                  for (var j=0; j < checkboxValues.length; j++) {
-                    console.log(data[i]);
-                    console.log(checkboxValues[j])
-                    html = html + "<td>" + data[i][checkboxValues[j]] + "</td>";
-                    }
-                    html = html + "</tr>";
-                }
-                html = html + "</tbody></table>";
-                jQuery('#table_div').html(html);
-                    
+            },
+            error: function(response) {
+                alert("An error occurred reaching "+cassavabase);
             }
         });
+
     });
 });
+
+
 </script>
+
 
