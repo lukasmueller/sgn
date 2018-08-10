@@ -6,7 +6,7 @@
     <option value="">local</option>
     <option value="https://cassbase.org">cassbase.org</option>
     <option value="https://cassavabase.org">cassavabase.org</option>
-    <option value="https://musabase.org">musabase.org</option>
+    <option value="https://musabase.org" selected>musabase.org</option>
     <option value="https://sweetpotatobase.org">sweetpotatobase.org</option>
     <option value="https://yambase.org">yambase.org</option>
     <option value="https://fernbase.org">fernbase.org</option>
@@ -22,7 +22,7 @@
     <option value="https://cassavabase.org">cassavabase.org</option>
     <option value="https://musabase.org">musabase.org</option>
     <option value="https://sweetpotatobase.org">sweetpotatobase.org</option>
-    <option value="https://yambase.org">yambase.org</option>
+    <option value="https://yambase.org" selected>yambase.org</option>
     <option value="https://fernbase.org">fernbase.org</option>
     <option value="https://solgenomics.net">solgenomics.net</option>
     <option value="https://www.crop-diversity.org/mgis">crop-diversity.org</option>
@@ -131,16 +131,46 @@ $(document).ready(function(){
                                 html = html + checkboxValues[k] + "<br/>";
                             } 
                             html = html + "</td>"
-                                        
+                            
+                            var allSame = true;
+                            var infoNotHere = true;
                             for (var i=0; i < databases.length; i++) {
                                 html = html + "<td>";
                                 for (var j=0; j < checkboxValues.length; j++) {
                                     if(combineData[germplasmName][databases[i]] != undefined){
-                                        html = html + combineData[germplasmName][databases[i]][checkboxValues[j]] + "<br/>";
+                                        var firstDatabaseValue = '';
+                                        if(combineData[germplasmName][databases[0]] != undefined){
+                                            firstDatabaseValue = combineData[germplasmName][databases[0]][checkboxValues[j]];
+                                        }
+                                        var currentDatabaseValue = combineData[germplasmName][databases[i]][checkboxValues[j]];
+                                        if(firstDatabaseValue == currentDatabaseValue){
+                                            html = html + currentDatabaseValue + "<br/>";
+                                            //html = html + "<span style='color:green'>" + currentDatabaseValue + "</span><br/>";
+                                        } else {
+                                            html = html + currentDatabaseValue + "<br/>";
+                                            //html = html + "<span style='color:red'>" + currentDatabaseValue + "</span><br/>";
+                                            allSame = false;
+                                        }
+                                    } else {
+                                        allSame = false;
                                     }
                                 }
                                 html = html + "</td>"
                             }
+                            
+                            html = html + "<td>";
+                            if (allSame == true){
+                                html = html + "<span class='glyphicon glyphicon-ok-sign text-success' style='font-size:3.5em;'></span>";
+                            }
+                            if (allSame == false){
+                                html = html + "<span class='glyphicon glyphicon-remove-sign text-danger' style='font-size:3.5em;'></span>";
+                            }
+                            if(infoNotHere == true){ 
+                                html = html + "<span class='glyphicon glyphicon-question-sign text-warning' style='font-size:3.5em;'></span>";
+                            }
+                            
+                            html = html + "</td>";
+                            
                             html = html + "</tr>";
                         }
                         html = html + "</tbody></table>";
