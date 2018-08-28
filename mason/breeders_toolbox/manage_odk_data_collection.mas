@@ -28,7 +28,7 @@ $odk_phenotyping_data_service_url => undef
     </div>
 
     <div class="well">
-        <&| /page/info_section.mas, title=>'Ontology Data: Compare ODK Form to Ontology', collapsible=>1, collapsed=>1, is_subsection=>1 &>
+        <&| /page/info_section.mas, title=>'Ontology Data: Compare ODK Form to Ontology', id=>'odk_ona_ontology_section', collapsible=>1, collapsed=>1, is_subsection=>1 &>
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form class="form-horizontal" id="import_odk_form_ontology" name="import_odk_form_ontology">
@@ -39,6 +39,8 @@ $odk_phenotyping_data_service_url => undef
                             </div>
                         </div>
                     </form>
+                    <button class="btn btn-primary" id="odk_ona_ontology_section_button">Get Form Data</button>
+                    <div id="odk_ona_ontology_section_form_data"></div>
                 </div>
             </div>
         </&>
@@ -198,7 +200,7 @@ $odk_phenotyping_data_service_url => undef
 
 jQuery(document).ready(function () {
 
-    jQuery.ajax ( {
+    jQuery.ajax ({
         url : '/ajax/odk/get_crossing_available_forms',
         beforeSend: function() {
             jQuery("#working_modal").modal("show");
@@ -233,6 +235,60 @@ jQuery(document).ready(function () {
             jQuery("#working_modal").modal("hide");
             alert("Error retrieving available ODK crossing forms");
         }
+    });
+
+    jQuery('#odk_ona_ontology_section_button').click(function() {
+        var selected_form = jQuery('#availabe_odk_crossing_forms_ontology').val();
+        jQuery.ajax ({
+            url : '/ajax/odk/get_odk_ona_form_data?form_id='+selected_form,
+            beforeSend: function() {
+                jQuery("#working_modal").modal("show");
+            },
+            success: function(response){
+                console.log(response);
+                jQuery("#working_modal").modal("hide");
+
+                var html = '<hr><table class="table table-bordered"><thead><tr><th>Select</th><th>Key</th><th>Value</th></tr></thead><tbody>';
+                var count = 0;
+                for (var top_level in response) {
+                    if (response.hasOwnProperty(top_level)) {
+                        if(Array.isArray(response[top_level])) {
+                            for(var i=0; i<response[top_level].length; i++){
+                                var child_obj = response[top_level][i];
+                                console.log(child_obj);
+                                for (var key in child_obj) {
+                                    if (child_obj.hasOwnProperty(key)) {
+                                        //console.log(child_obj[key]);
+                                        if(Array.isArray(child_obj[key])) {
+                                            console.log(child_obj[key]);
+                                            
+                                            for(var j=0; j<child_obj[key].length; j++){
+                                                var child_obj2 = child_obj[key][j];
+                                                
+                                            }
+                                        } else if(typeof child_obj[key] === 'object') {
+                                            
+                                        } else {
+                                            html = html + '<tr><td><input type="checkbox" name="odk_ona_form_data_select" data-data_id="odk_ona_form_data_select_'+count+'"></td><td><div id="odk_ona_form_data_select_'+count+'_key">'+key+'</div></td><td><div id="odk_ona_form_data_select_'+count+'_value">'+child_obj[key]+'</div></td></tr>';
+                                            count = count + 1;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            html = html + '<tr><td><input type="checkbox" name="odk_ona_form_data_select" data-data_id="odk_ona_form_data_select_'+count+'"></td><td><div id="odk_ona_form_data_select_'+count+'_key">'+top_level+'</div></td><td><div id="odk_ona_form_data_select_'+count+'_value">'+response[top_level]+'</div></td></tr>';
+                            count = count + 1;
+                        }
+                    }
+                }
+                html = html + '</tbody></table>';
+                jQuery('#odk_ona_ontology_section_form_data').html(html);
+            },
+            error: function(response){
+                jQuery("#working_modal").modal("hide");
+                alert("Error retrieving odk ona form info");
+            }
+        });
     });
 
     jQuery('#odk_ona_crossing_section_onswitch').click(function() {

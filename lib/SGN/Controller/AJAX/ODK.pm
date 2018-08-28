@@ -88,6 +88,31 @@ sub get_crossing_available_forms_GET {
     $c->stash->{rest} = { success => 1, forms=>$message_hash };
 }
 
+sub get_odk_ona_form_data : Path('/ajax/odk/get_odk_ona_form_data') : ActionClass('REST') { }
+
+sub get_odk_ona_form_data_GET {
+    my ( $self, $c ) = @_;
+    my $form_id = $c->req->param('form_id');
+    my $odk_crossing_data_service_name = $c->config->{odk_crossing_data_service_name};
+    my $message_hash;
+    if ($odk_crossing_data_service_name eq 'ONA'){
+        my $ua = LWP::UserAgent->new;
+        $ua->credentials( 'api.ona.io:443', 'DJANGO', $c->config->{odk_crossing_data_service_username}, $c->config->{odk_crossing_data_service_password} );
+        my $login_resp = $ua->get("https://api.ona.io/api/v1/user.json");
+        my $server_endpoint = "https://api.ona.io/api/v1/forms/$form_id/form.json";
+        my $resp = $ua->get($server_endpoint);
+
+        if ($resp->is_success) {
+            my $message = $resp->decoded_content;
+            $message_hash = decode_json $message;
+        }
+    } else {
+        $c->stash->{rest} = { error => 'Error: We only support ONA as an ODK crossing service for now.' };
+        $c->detach();
+    }
+    $c->stash->{rest} = $message_hash;
+}
+
 sub get_crossing_data : Path('/ajax/odk/get_crossing_data') : ActionClass('REST') { }
 
 sub get_crossing_data_GET {
