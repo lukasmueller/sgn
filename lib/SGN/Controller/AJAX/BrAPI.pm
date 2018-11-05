@@ -51,12 +51,14 @@ sub brapi : Chained('/') PathPart('brapi') CaptureArgs(1) {
 
 	my $page = $c->req->param("page") || 0;
 	my $page_size = $c->req->param("pageSize") || $DEFAULT_PAGE_SIZE;
-	my $session_token = $c->req->headers->header("access_token");
+	my $session_token = $c->req->headers->header("Authorization");
+	$session_token =~ s/^\s*Bearer\s//;
+	$session_token = $session_token || $c->req->headers->header("access_token");
 
 	if (defined $c->request->data){
 		$page = $c->request->data->{"page"} || $page || 0;
 		$page_size = $c->request->data->{"pageSize"} || $page_size || $DEFAULT_PAGE_SIZE;
-        $session_token = $c->request->data->{"access_token"} || $session_token;
+    $session_token = $session_token || $c->request->data->{"access_token"};
 	}
 	my $bcs_schema = $c->dbic_schema('Bio::Chado::Schema', 'sgn_chado');
 	my $metadata_schema = $c->dbic_schema("CXGN::Metadata::Schema");
@@ -81,7 +83,7 @@ sub brapi : Chained('/') PathPart('brapi') CaptureArgs(1) {
 
 	$c->response->headers->header( "Access-Control-Allow-Origin" => '*' );
 	$c->response->headers->header( "Access-Control-Allow-Methods" => "POST, GET, PUT, DELETE" );
-	$c->response->headers->header( 'Access-Control-Allow-Headers' => 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range');
+	$c->response->headers->header( 'Access-Control-Allow-Headers' => 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range,Authorization');
 	$c->stash->{session_token} = $session_token;
 
 	if (defined $c->request->data){
