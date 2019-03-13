@@ -1,6 +1,6 @@
 
-
 import '../../legacy/jquery.js';
+import '../../legacy/d3/d3Min.js';
 
 export function init(main_div){
   if (!(main_div instanceof HTMLElement)){
@@ -53,13 +53,22 @@ export function init(main_div){
 	           <div id="fixed_factors" class="panel-body" style="background-color:lightyellow;min-height:100px;height:auto;border-style:dotted;border-width:5px;color:grey"></div>
            
                 </div>
-	        <div id="fixed_factors_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
-	           <div class="panel-header">
-	             Fixed factors with interaction
-	           <button  id="add_interaction_factor_button">add new interaction</button>         </div>
-	            <div id="fixed_factors_collection" class="panel-body">
-	            </div>
-	        </div>
+	        <div id="interaction_factors_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
+               <div class="panel-header">
+	          Fixed factors with interaction
+                  <button  id="add_interaction_factor_button">add new interaction</button>
+	       </div>
+	       <div id="interaction_factors_collection" name="interaction_factors_collection" class="panel-body">
+	       </div>
+
+               <div class="panel-header">
+	          Fixed factors with variable intersects
+                  <button  id="add_intersects_factor_button">add new interaction</button>
+	       </div>
+	       <div id="fixed_factors_intersects" class="panel-body">
+	       </div>
+	
+           </div>
 	<div style="height:30">&nbsp;</div>
                 <div id="random_factors_panel" class="panel panel-default" style="border-width:0px">
           	   <div class="panel-header">Random factors</div>
@@ -92,12 +101,12 @@ export function init(main_div){
            if (r.error) { 
              alert(r.error);
            }
-           else { 
+             else {
              $('#dependent_variable').html(r.dependent_variable);
              var html = "";
 
              for (var n=0; n<r.factors.length; n++) { 
-                html += "<div style=\"z-index:4;border-style:solid;border-radius:8px;width:200px;height:100;border-color:#337ab7;background-color:#337ab7;color:white;margin:4px;text-align:center\" id=\"factor_"+n+"\" class=\"container\">"+r.factors[n]+"</div>";
+                html += "<div style=\"z-index:4;border-style:solid;border-radius:8px;width:200px;height:100;border-color:#337ab7;background-color:#337ab7;color:white;margin:4px;text-align:center\" id=\"factor_"+n+"\" class=\"container factor\">"+r.factors[n]+"</div>";
              }
              $('#factors').html(html);
 
@@ -159,19 +168,21 @@ export function init(main_div){
    });
 
 
-    var divnr;
+    var interaction_factor_count;
+    var interaction_factor_div_data = new Object();
+    
     function add_interaction_div() {
       
-	if (divnr === undefined) { divnr=0;}
+	if (interaction_factor_count === undefined) { interaction_factor_count=0;}
 	
-	var previous_div = divnr;
-	divnr++;
+	var previous_div = interaction_factor_count;
+	interaction_factor_count++;
 
-	var div_name = "interaction_"+divnr;
+	var div_name = "interaction_"+ interaction_factor_count;
 
-	var div = '<div id="'+div_name+'_panel" class="panel panel-default" style="border-width:0px"><div id="'+div_name+'_header" class="panel-header"><span id="close_interaction_div_'+divnr+'" class="remove">X</span> Interaction Term '+divnr+'</div><div id="'+div_name+'" class="panel-body" style="min-height:100px;height:auto;margin-top:0px;border-style:dotted;border-width:5px;color:grey;background-color:lightyellow;"></div></div>';
+	var div = '<div id="'+div_name+'_panel" class="panel panel-default" style="border-width:0px"><div id="'+div_name+'_header" class="panel-header"><span id="close_interaction_div_'+interaction_factor_count+'" class="remove">X</span> Interaction Term '+interaction_factor_count+'</div><div id="'+div_name+'" class="panel-body interaction_factor_group" style="min-height:100px;height:auto;margin-top:0px;border-style:dotted;border-width:5px;color:grey;background-color:lightyellow;"></div></div>';
 
-	$('#fixed_factors_collection').append(div);
+	$('#interaction_factors_collection').append(div);
 
 	$('#'+div_name).droppable( {
 	    drop: function( event, ui ) {
@@ -190,11 +201,11 @@ export function init(main_div){
             }});
 
         $(document).on("click", "span.remove", function(e) {
-	    alert("BOO2!");
 	    this.parentNode.parentNode.remove(); get_model_string();
 	});
-
-	
+	alert('Divname = '+div_name);
+		interaction_factor_div_data[div_name]=1;
+        alert(JSON.stringify(interaction_factor_div_data));
 
    }
     
@@ -250,11 +261,13 @@ export function init(main_div){
 
    $('#run_mixed_model_button').click( function() { 
        var model = $('#model_string').text();
+       alert('Model: '+model);
        var tempfile = $('#tempfile').text();
        var dependent_variable = $('#dependent_variable_select').val();
-       alert(model + tempfile+ dependent_variable);
+       alert(model + " "+tempfile+" "+ dependent_variable);
        $.ajax( {
            "url": '/ajax/mixedmodels/run',
+	   "method": "POST",
            "data": { "model" : model, "tempfile" : tempfile, "dependent_variable": dependent_variable },
            "success": function(r) { 
                if (r.error) { alert(r.error);}
@@ -279,27 +292,37 @@ export function init(main_div){
 	    fixed_factors_json = JSON.parse(fixed_factors);
 	}
 
-	
-	var fixed_factors_interactions = new Array();
-	$('#fixed_factors_collection').children().each( function() {
-	    if ($(this).children().size()>0) { 
-		var interactions = this.childNodes;
-		alert(JSON.stringify(interactions));
-		var panel_div = interactions.childNodes;
-		var fixed_factors_interaction = panel_div[1];
-		var fixed_factors_interaction = fixed_factors_interaction_div.text();
-		fixed_factors_interaction = fixed_factors_interaction.replace(/X /g, ',');
-		fixed_factors_interaction = fixed_factors_interaction.substr(1);
-		fixed_factors_interaction = fixed_factors_interaction.replace(/,/g, '","');
-		fixed_factors_interactions.push(fixed_factors_interaction);
-	    }
-	    
-	});
-	var fixed_factors_interaction = fixed_factors_interactions.join('"],["');
+	alert($('#interaction_factors_collection').html());
+	var interaction_factors = new Array();
+	var fixed_factors_interaction;
+	var fixed_factors_interaction_collection;
+	var interactions = Object.keys(interaction_factor_div_data);
+	alert(JSON.stringify(interactions));
+	var interaction_collection = new Array();
+	for (var i=0; i<interactions.length; i++) { 
+	    alert("INTERACTION: "+interactions[i]);   
+	    // iterate through draggable divs (remove span + factor name)
+	    alert('hey: '+$('#'+interactions[i]).html());
+	    var children = $('#'+interactions[i]).children('.factor');
+
+	    children.each( function() { 
+  	         fixed_factors_interaction = $(this).text();
+	         alert('extracted: '+fixed_factors_interaction);
+	         fixed_factors_interaction = fixed_factors_interaction.replace(/X /g, ',');
+	         fixed_factors_interaction = fixed_factors_interaction.substr(1);
+	         fixed_factors_interaction = fixed_factors_interaction.replace(/,/g, '","');
+	         alert(fixed_factors_interaction);
+	         interaction_factors.push(fixed_factors_interaction);
+	       
+	    });
+	    interaction_collection.push(interaction_factors);
+	}
+	fixed_factors_interaction_collection = interaction_collection.join('"],["');
 	var fixed_factors_interaction_json;
-	if (fixed_factors_interaction) {
-	    fixed_factors_interaction = '[["'+fixed_factors_interaction+'"]]';
-	    fixed_factors_interaction_json =   JSON.parse(fixed_factors_interaction) ;
+	alert("finally: "+fixed_factors_interaction_collection);
+	if (fixed_factors_interaction_collection) {
+	    fixed_factors_interaction_collection = '[["'+fixed_factors_interaction_collection+'"]]';
+	    fixed_factors_interaction_json = JSON.parse(fixed_factors_interaction_collection);
 	}
 	
         var random_factors = $('#random_factors').text();
@@ -316,7 +339,6 @@ export function init(main_div){
 
 	var dependent_variable = $('#dependent_variable_select').val();
 
-	
         var json =  {
 	    'fixed_factors' : fixed_factors_json,
             'fixed_factors_interaction' : fixed_factors_interaction_json,
@@ -326,7 +348,6 @@ export function init(main_div){
 	};
         return json;
     }
-
     
     
     function get_model_string() {
@@ -344,12 +365,12 @@ export function init(main_div){
 		}
 		else { 
 		    alert(r.model);
-		    jQuery('#model_string').html(JSON.stringify(r.model));
+		    jQuery('#model_string').text(r.model);
 		}
 	    }
 	});
     }
-};
+    };
 
 
 

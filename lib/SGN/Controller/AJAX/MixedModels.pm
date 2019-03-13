@@ -34,6 +34,9 @@ sub model_string: Path('/ajax/mixedmodels/modelstring') Args(0) {
     print STDERR "JSON received: $fixed_factors\n";
 
     my $fixed_factors_interaction = $params->{fixed_factors_interaction};
+
+    print STDERR "JSON for interaction: ".Dumper($fixed_factors_interaction)."\n";
+    
     my $random_factors = $params->{random_factors};
     my $dependent_variable = $params->{dependent_variable};
     
@@ -121,7 +124,7 @@ sub run: Path('/ajax/mixedmodels/run') Args(0) {
     my $self = shift;
     my $c = shift;
 
-    my $params = $c->req->body_data();
+    my $params = $c->req()->params();
 
     print STDERR Dumper($params);
     
@@ -139,7 +142,7 @@ sub run: Path('/ajax/mixedmodels/run') Args(0) {
     open(my $F, ">", $param_file) || die "Can't open $param_file for writing.";
     print $F "dependent_variable = \"$dependent_variable\"\n";
 
-    print $F "model <- \"$model\"\n";
+    print $F "model <- $model\n";
     close($F);
     
     # run r script to create model
