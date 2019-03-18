@@ -14,6 +14,8 @@ has 'fixed_factors' => (is => 'rw', isa => 'Ref', default => sub {[]});
 
 has 'fixed_factors_interaction' => (is => 'rw', isa => 'Ref', default => sub{[]});
 
+has 'variable_slope_factors' => (is => 'rw', isa => 'Ref', default => sub{[]});
+
 has 'random_factors' => (is => 'rw', isa => 'Ref', default => sub {[]});
 
 has 'random_factors_random_slope' => (is => 'rw', isa => 'Bool');
@@ -45,6 +47,7 @@ sub generate_model {
     my $dependent_variable = $self->dependent_variable();
     my $fixed_factors = $self->fixed_factors();
     my $fixed_factors_interaction = $self->fixed_factors_interaction();
+    my $variable_slope_factors = $self->variable_slope_factors();
     my $random_factors = $self->random_factors();
     my $random_factors_random_slope = $self->random_factors_random_slope();
 
@@ -69,15 +72,25 @@ sub generate_model {
 
     my $formatted_fixed_factors_interaction = "";
     foreach my $interaction (@$fixed_factors_interaction) {
-	if (exists($interaction->[0]) && exists($interaction->[1])) { 
-	    my $term = " (1+$interaction->[0] \| $interaction->[1]) ";
-	    $formatted_fixed_factors_interaction .= $term;
-	    push @addends, $formatted_fixed_factors_interaction;
+	my $terms = "";
+	if (ref($interaction)) {
+	    $terms = join("*", @$interaction);
+	    push @addends, $terms;
 	}
 	else {
 	    $error = "Interaction terms are not correctly defined.";
 	}
     }
+
+    my $formatted_variable_slope_factors = "";
+    foreach my $variable_slope (@$variable_slope_factors) { 
+	if (exists($variable_slope->[0]) && exists($variable_slope->[1])) { 
+	    my $term = " (1+$variable_slope->[0] \| $variable_slope->[1]) ";
+	    $formatted_fixed_factors_interaction .= $term;
+	    push @addends, $formatted_variable_slope_factors;
+	}
+    }
+
     
     my $formatted_random_factors = "";
 #    if ($random_factors_random_slope) { 

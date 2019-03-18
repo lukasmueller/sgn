@@ -308,21 +308,28 @@ export function init(main_div){
 	    children.each( function() { 
   	         fixed_factors_interaction = $(this).text();
 	         alert('extracted: '+fixed_factors_interaction);
-	         fixed_factors_interaction = fixed_factors_interaction.replace(/X /g, ',');
-	         fixed_factors_interaction = fixed_factors_interaction.substr(1);
-	         fixed_factors_interaction = fixed_factors_interaction.replace(/,/g, '","');
+
+		// remove X closing box
+	         fixed_factors_interaction = fixed_factors_interaction.substr(2);
+
+//		fixed_factors_interaction = fixed_factors_interaction;
 	         alert(fixed_factors_interaction);
-	         interaction_factors.push(fixed_factors_interaction);
+	        interaction_factors.push(fixed_factors_interaction);
+
 	       
 	    });
 	    interaction_collection.push(interaction_factors);
+	    interaction_factors = new Array();
+	    alert("interaction factors now: "+JSON.stringify(interaction_factors));
 	}
-	fixed_factors_interaction_collection = interaction_collection.join('"],["');
+	//fixed_factors_interaction_collection = interaction_collection.join('"],["');
+	alert("finally: "+ JSON.stringify(interaction_collection));
+
 	var fixed_factors_interaction_json;
-	alert("finally: "+fixed_factors_interaction_collection);
-	if (fixed_factors_interaction_collection) {
-	    fixed_factors_interaction_collection = '[["'+fixed_factors_interaction_collection+'"]]';
-	    fixed_factors_interaction_json = JSON.parse(fixed_factors_interaction_collection);
+	if (interaction_collection) {
+	    //fixed_factors_interaction_collection = '[["'+fixed_factors_interaction_collection+'"]]';
+	    fixed_factors_interaction_json = interaction_collection;
+	    alert("JSON: "+fixed_factors_interaction_json);
 	}
 	
         var random_factors = $('#random_factors').text();

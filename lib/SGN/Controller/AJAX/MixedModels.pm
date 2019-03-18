@@ -142,7 +142,7 @@ sub run: Path('/ajax/mixedmodels/run') Args(0) {
     open(my $F, ">", $param_file) || die "Can't open $param_file for writing.";
     print $F "dependent_variable = \"$dependent_variable\"\n";
 
-    print $F "model <- $model\n";
+    print $F "model <- \"$model\"\n";
     close($F);
     
     # run r script to create model
