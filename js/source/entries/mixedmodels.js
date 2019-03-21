@@ -53,14 +53,14 @@ export function init(main_div){
 	           <div id="fixed_factors" class="panel-body" style="background-color:lightyellow;min-height:100px;height:auto;border-style:dotted;border-width:5px;color:grey"></div>
            
                 </div>
-	        <div id="interaction_factors_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
-               <div class="panel-header">
-	          Fixed factors with interaction
-                  <button  id="add_interaction_factor_button">add new interaction</button>
-	       </div>
-	       <div id="interaction_factors_collection" name="interaction_factors_collection" class="panel-body">
-	       </div>
-
+	       <div id="interaction_factors_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
+                   <div class="panel-header">
+	               Fixed factors with interaction
+                       <button  id="add_interaction_factor_button">add new interaction</button>
+	           </div>
+	           <div id="interaction_factors_collection" name="interaction_factors_collection" class="panel-body">
+	           </div>
+               </div>
                <div class="panel-header">
 	          Fixed factors with variable intersects
                   <button  id="add_intersects_factor_button">add new interaction</button>
@@ -68,16 +68,17 @@ export function init(main_div){
 	       <div id="fixed_factors_intersects" class="panel-body">
 	       </div>
 	
-           </div>
-	<div style="height:30">&nbsp;</div>
-                <div id="random_factors_panel" class="panel panel-default" style="border-width:0px">
-          	   <div class="panel-header">Random factors</div>
-	           <div id="random_factors" class="panel-body" style="background-color:lightyellow;min-height:100px;height:auto;border-style:dotted;border-width:5px;color:grey">          
+             
+	       <div style="height:30">&nbsp;</div>
+                  <div id="random_factors_panel" class="panel panel-default" style="border-width:0px">
+          	     <div class="panel-header">Random factors</div>
+	             <div id="random_factors" class="panel-body" style="background-color:lightyellow;min-height:100px;height:auto;border-style:dotted;border-width:5px;color:grey">          
                    </div>
-                </div>
+               </div>
 	       
-          </div>
+            </div>
 	</div>
+	
         <br />
         <div id="tempfile" style="display:none" >
         </div>
@@ -203,9 +204,7 @@ export function init(main_div){
         $(document).on("click", "span.remove", function(e) {
 	    this.parentNode.parentNode.remove(); get_model_string();
 	});
-	alert('Divname = '+div_name);
-		interaction_factor_div_data[div_name]=1;
-        alert(JSON.stringify(interaction_factor_div_data));
+
 
    }
     
@@ -292,37 +291,58 @@ export function init(main_div){
 	    fixed_factors_json = JSON.parse(fixed_factors);
 	}
 
-	alert($('#interaction_factors_collection').html());
-	var interaction_factors = new Array();
-	var fixed_factors_interaction;
-	var fixed_factors_interaction_collection;
-	var interactions = Object.keys(interaction_factor_div_data);
-	alert(JSON.stringify(interactions));
+	// Structure:
+	// interaction_factors_collection panel
+	//    interaction_factors_collection panel-header 
+	//    interaction_1_panel panel
+	//       interaction_1_header panel-header
+	//       interaction_1  panel-body
+	//         factor_1 span X FACTOR_NAME1
+	//         factor_2 span X FACTOR_NAME2
+	//       interaction_2_header panel-header
+	//         factor_3 span X FACTOR_NAME3
+	//         factor_4 span X FACTOR_NAME4
+	//
+
+	var interaction_factors_collection_divs = $('#interaction_factors_collection_panel').children();
+	alert($('#interaction_factors_collection_panel').html());
 	var interaction_collection = new Array();
-	for (var i=0; i<interactions.length; i++) { 
-	    alert("INTERACTION: "+interactions[i]);   
-	    // iterate through draggable divs (remove span + factor name)
-	    alert('hey: '+$('#'+interactions[i]).html());
-	    var children = $('#'+interactions[i]).children('.factor');
+	var interaction_factors = new Array();
 
-	    children.each( function() { 
-  	         fixed_factors_interaction = $(this).text();
-	         alert('extracted: '+fixed_factors_interaction);
+	alert("DIV COUNT = "+interaction_factors_collection_divs.length);
+	for (var i=1; i<interaction_factors_collection_divs.length; i++) { // skip interaction_factors_collection panel header
 
-		// remove X closing box
-	         fixed_factors_interaction = fixed_factors_interaction.substr(2);
+	    var $div = $(interaction_factors_collection_divs[i]);
 
-//		fixed_factors_interaction = fixed_factors_interaction;
-	         alert(fixed_factors_interaction);
-	        interaction_factors.push(fixed_factors_interaction);
+	    alert("DIV = "+ $div.text()+" ID="+$div.attr('id'));
 
-	       
-	    });
-	    interaction_collection.push(interaction_factors);
-	    interaction_factors = new Array();
-	    alert("interaction factors now: "+JSON.stringify(interaction_factors));
+	    var interaction_panels = $div.children();
+
+	    for (var n=0; n<interaction_panels.length; n++) { 
+		alert('interaction_panel '+$(interaction_panels[n]).text()+ ' LEN:'+$(interaction_panels[n]).length +' ID: '+$(interaction_panels[n]).attr('id'));
+		
+		var interaction_panel_components = $(interaction_panels[n]).children();
+		var $interaction_body = $(interaction_panel_components[1]);
+		alert("parsing interaction body..."+$interaction_body.text()+ " ID: " +$interaction_body.attr('id'));
+		
+		var factors = $interaction_body.children();
+		
+		for (var m=0; m<factors.length; m++) {		
+		    var $factor = $(factors[m]);
+		    var label = $factor.text();
+		    
+		    // remove X closing box
+		    label = label.substr(2);
+		    alert("FACTOR"+label);
+		    interaction_factors.push(label);		
+		}
+		interaction_collection.push(interaction_factors);
+		interaction_factors = new Array();
+	    }
+	    
 	}
-	//fixed_factors_interaction_collection = interaction_collection.join('"],["');
+					  
+	///var fixed_factors_interaction_collection = interaction_collection.join('"],["');
 	alert("finally: "+ JSON.stringify(interaction_collection));
 
 	var fixed_factors_interaction_json;
