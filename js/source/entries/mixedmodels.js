@@ -53,29 +53,32 @@ export function init(main_div){
 	           <div id="fixed_factors" class="panel-body" style="background-color:lightyellow;min-height:100px;height:auto;border-style:dotted;border-width:5px;color:grey"></div>
            
                 </div>
-	       <div id="interaction_factors_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
+	       <div id="interaction_factor_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
                    <div class="panel-header">
 	               Fixed factors with interaction
                        <button  id="add_interaction_factor_button">add new interaction</button>
 	           </div>
 	           <div id="interaction_factors_collection" name="interaction_factors_collection" class="panel-body">
 	           </div>
-               </div>
-               <div class="panel-header">
-	          Fixed factors with variable intersects
-                  <button  id="add_intersects_factor_button">add new interaction</button>
-	       </div>
-	       <div id="fixed_factors_intersects" class="panel-body">
-	       </div>
+                </div>
+		<div id="variable_slope_intersect_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
+
+	           <div class="panel-header">
+	              Fixed factors with variable slope/intersects
+                      <button  id="add_variable_slope_intersect_button">add new variable slope/intersect</button>
+	            </div>
+	            <div id="variable_slope_intersect_collection" class="panel-body">
 	
+	            </div>
+	         </div>
              
-	       <div style="height:30">&nbsp;</div>
+	         <div style="height:30">&nbsp;</div>
                   <div id="random_factors_panel" class="panel panel-default" style="border-width:0px">
           	     <div class="panel-header">Random factors</div>
 	             <div id="random_factors" class="panel-body" style="background-color:lightyellow;min-height:100px;height:auto;border-style:dotted;border-width:5px;color:grey">          
+                     </div>
                    </div>
-               </div>
-	       
+	       </div>
             </div>
 	</div>
 	
@@ -165,25 +168,28 @@ export function init(main_div){
 
    $('#add_interaction_factor_button').click( function(e) { 
 
-      add_interaction_div();	       
+       add_sub_div("interaction_factors_collection", "interaction", "Interaction");	       
    });
 
+    $('#add_variable_slope_intersect_button').click( function(e) {
+	add_sub_div("variable_slope_intersect_collection", "variable_slope_intersect", "Variable slope/intersect");
+    });
 
-    var interaction_factor_count;
-    var interaction_factor_div_data = new Object();
+
+    var factor_count;
     
-    function add_interaction_div() {
+    function add_sub_div(collection_div, div_prefix, collection_name) {
       
-	if (interaction_factor_count === undefined) { interaction_factor_count=0;}
+	if (factor_count === undefined) { factor_count=0;}
 	
-	var previous_div = interaction_factor_count;
-	interaction_factor_count++;
+	var previous_div = factor_count;
+	factor_count++;
 
-	var div_name = "interaction_"+ interaction_factor_count;
+	var div_name = div_prefix + factor_count;
 
-	var div = '<div id="'+div_name+'_panel" class="panel panel-default" style="border-width:0px"><div id="'+div_name+'_header" class="panel-header"><span id="close_interaction_div_'+interaction_factor_count+'" class="remove">X</span> Interaction Term '+interaction_factor_count+'</div><div id="'+div_name+'" class="panel-body interaction_factor_group" style="min-height:100px;height:auto;margin-top:0px;border-style:dotted;border-width:5px;color:grey;background-color:lightyellow;"></div></div>';
+	var div = '<div id="'+div_name+'_panel" class="panel panel-default" style="border-width:0px"><div id="'+div_name+'_header" class="panel-header"><span id="close_interaction_div_'+factor_count+'" class="remove">X</span> '+collection_name+' Term '+factor_count+'</div><div id="'+div_name+'" class="panel-body interaction_factor_group" style="min-height:100px;height:auto;margin-top:0px;border-style:dotted;border-width:5px;color:grey;background-color:lightyellow;"></div></div>';
 
-	$('#interaction_factors_collection').append(div);
+	$('#'+collection_div).append(div);
 
 	$('#'+div_name).droppable( {
 	    drop: function( event, ui ) {
@@ -218,9 +224,9 @@ export function init(main_div){
 //onclick="this.parentNode.parentNode.removeChild(this.parentNode); return false;">
    function setClonedTagProperties(e) { 
        e.id = e.html()+'C';
-       var html = '<span id="'+e.id+'_remove" class="remove">X</a></span> '+e.html();
+       var html = '<span id="'+e.id+'_remove" class="remove_factor">X</a></span> '+e.html();
        e.html(html);
-       $(document).on("click", "span.remove", function(e) { this.parentNode.remove(); get_model_string()});
+       $(document).on("click", "span.remove_factor", function(e) { this.parentNode.remove(); get_model_string()});
    }
 
    $('#dependent_variable').on('change', '#dependent_variable_select', function() { 
@@ -282,14 +288,59 @@ export function init(main_div){
     
 
     function extract_model_parameters() {
-	var fixed_factors = $('#fixed_factors').text();
-	fixed_factors = fixed_factors.replace(/X /g, '","');
-	fixed_factors = fixed_factors.substr(3);
-	var fixed_factors_json;
-	if (fixed_factors) {
-	    fixed_factors = '["'+fixed_factors+'"]';
-	    fixed_factors_json = JSON.parse(fixed_factors);
+
+	var fixed_factors = parse_simple_factors("fixed_factors");
+
+	var interaction_factors = parse_factor_collection("interaction_factor_collection_panel");
+
+	var variable_slope_intersects = parse_factor_collection("variable_slope_intersect_collection_panel");
+
+	var random_factors = parse_simple_factors("random_factors");
+	
+        // var random_factors = $('#random_factors').text();
+        // random_factors = random_factors.replace(/X /g, '","');
+	// random_factors = random_factors.replace(/\s/g, '');
+        // random_factors = random_factors.substr(3);
+	// if (random_factors) {
+	//     random_factors = '["'+random_factors+'"]';
+	// }
+	// var random_factors_json;
+	// if (random_factors) {
+	//     random_factors_json = JSON.parse(random_factors);
+	// }
+
+	var dependent_variable = $('#dependent_variable_select').val();
+
+        var json =  {
+	    'fixed_factors' : fixed_factors,
+            'fixed_factors_interaction' : interaction_factors,
+	    'variable_slope_intersects' : variable_slope_intersects, 
+	    'random_factors' : random_factors,
+	    'dependent_variable' : dependent_variable
+	    
+	};
+        return json;
+    }
+
+    function parse_simple_factors(simple_div) {
+	alert("parsing div "+simple_div);
+	alert($('#'+simple_div).html());
+	
+	var factors = $('#'+simple_div).children();
+	var factor_list = new Array();
+	for(var n=0; n<factors.length; n++) {
+	    var factor_string = $(factors[n]).text();
+	    alert("FACTOR = "+factor_string);
+	    factor_string = factor_string.replace(/X /g, '');
+	    
+	    if (factor_string) {
+		factor_list.push(factor_string);
+	    }
 	}
+	return factor_list;
+    }
+
+    function parse_factor_collection(collection_div) {
 
 	// Structure:
 	// interaction_factors_collection panel
@@ -304,28 +355,28 @@ export function init(main_div){
 	//         factor_4 span X FACTOR_NAME4
 	//
 
-	var interaction_factors_collection_divs = $('#interaction_factors_collection_panel').children();
-	alert($('#interaction_factors_collection_panel').html());
-	var interaction_collection = new Array();
-	var interaction_factors = new Array();
+	var collection_divs = $('#'+collection_div).children();
+	alert("COLLECTION PANEL: "+collection_div+" content: "+$('#'+collection_div).html());
+	var collection = new Array();
+	var grouped_factors = new Array();
 
-	alert("DIV COUNT = "+interaction_factors_collection_divs.length);
-	for (var i=1; i<interaction_factors_collection_divs.length; i++) { // skip interaction_factors_collection panel header
+	alert("DIV COUNT = "+collection_divs.length);
+	for (var i=1; i< collection_divs.length; i++) { // skip interaction_factors_collection panel header
 
-	    var $div = $(interaction_factors_collection_divs[i]);
+	    var $div = $(collection_divs[i]);
 
 	    alert("DIV = "+ $div.text()+" ID="+$div.attr('id'));
 
-	    var interaction_panels = $div.children();
+	    var top_panels = $div.children();
 
-	    for (var n=0; n<interaction_panels.length; n++) { 
-		alert('interaction_panel '+$(interaction_panels[n]).text()+ ' LEN:'+$(interaction_panels[n]).length +' ID: '+$(interaction_panels[n]).attr('id'));
+	    for (var n=0; n< top_panels.length; n++) { 
+		alert('top_panel '+$(top_panels[n]).text()+ ' LEN:'+$(top_panels[n]).length +' ID: '+$(top_panels[n]).attr('id'));
 		
-		var interaction_panel_components = $(interaction_panels[n]).children();
-		var $interaction_body = $(interaction_panel_components[1]);
-		alert("parsing interaction body..."+$interaction_body.text()+ " ID: " +$interaction_body.attr('id'));
+		var panel_components = $(top_panels[n]).children();
+		var $panel_body = $(panel_components[1]);
+		alert("parsing interaction body..."+$panel_body.text()+ " ID: " +$panel_body.attr('id'));
 		
-		var factors = $interaction_body.children();
+		var factors = $panel_body.children();
 		
 		for (var m=0; m<factors.length; m++) {		
 		    var $factor = $(factors[m]);
@@ -334,46 +385,27 @@ export function init(main_div){
 		    // remove X closing box
 		    label = label.substr(2);
 		    alert("FACTOR"+label);
-		    interaction_factors.push(label);		
+		    grouped_factors.push(label);		
 		}
-		interaction_collection.push(interaction_factors);
-		interaction_factors = new Array();
-	    }
-	    
+		collection.push(grouped_factors);
+		grouped_factors = new Array();
+	    }   
 	}
 					  
 	///var fixed_factors_interaction_collection = interaction_collection.join('"],["');
-	alert("finally: "+ JSON.stringify(interaction_collection));
+	alert("finally: "+ JSON.stringify(collection));
 
 	var fixed_factors_interaction_json;
-	if (interaction_collection) {
+	if (collection) {
 	    //fixed_factors_interaction_collection = '[["'+fixed_factors_interaction_collection+'"]]';
-	    fixed_factors_interaction_json = interaction_collection;
-	    alert("JSON: "+fixed_factors_interaction_json);
 	}
+	return collection;
+
+    }
+
+    function parse_random_factors() {
 	
-        var random_factors = $('#random_factors').text();
-        random_factors = random_factors.replace(/X /g, '","');
-	random_factors = random_factors.replace(/\s/g, '');
-        random_factors = random_factors.substr(3);
-	if (random_factors) {
-	    random_factors = '["'+random_factors+'"]';
-	}
-	var random_factors_json;
-	if (random_factors) {
-	    random_factors_json = JSON.parse(random_factors);
-	}
 
-	var dependent_variable = $('#dependent_variable_select').val();
-
-        var json =  {
-	    'fixed_factors' : fixed_factors_json,
-            'fixed_factors_interaction' : fixed_factors_interaction_json,
-	    'random_factors' : random_factors_json,
-	    'dependent_variable' : dependent_variable
-	    
-	};
-        return json;
     }
     
     

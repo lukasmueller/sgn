@@ -18,7 +18,7 @@ has 'variable_slope_factors' => (is => 'rw', isa => 'Ref', default => sub{[]});
 
 has 'random_factors' => (is => 'rw', isa => 'Ref', default => sub {[]});
 
-has 'random_factors_random_slope' => (is => 'rw', isa => 'Bool');
+has 'variable_slope_intersects' => (is => 'rw', isa => 'Ref', default => sub {[]});
 
 has 'traits' => (is => 'rw', isa => 'Ref');
 
@@ -47,15 +47,14 @@ sub generate_model {
     my $dependent_variable = $self->dependent_variable();
     my $fixed_factors = $self->fixed_factors();
     my $fixed_factors_interaction = $self->fixed_factors_interaction();
-    my $variable_slope_factors = $self->variable_slope_factors();
+    my $variable_slope_intersects = $self->variable_slope_intersects();
     my $random_factors = $self->random_factors();
-    my $random_factors_random_slope = $self->random_factors_random_slope();
 
     my $error;
 
     my @addends = ();
     
-    print STDERR join("\n", ("DV", $dependent_variable, "FF", Dumper($fixed_factors), "RF", Dumper($random_factors), "TF", $tempfile, "FFI", Dumper($fixed_factors_interaction)));
+    print STDERR join("\n", ("DV", $dependent_variable, "FF", Dumper($fixed_factors), "RF", Dumper($random_factors), "TF", $tempfile, "FFI", Dumper($fixed_factors_interaction), "VSI: ", Dumper($variable_slope_intersects)));
 
     print STDERR Dumper($fixed_factors);
     my $model = "";
@@ -82,12 +81,13 @@ sub generate_model {
 	}
     }
 
-    my $formatted_variable_slope_factors = "";
-    foreach my $variable_slope (@$variable_slope_factors) { 
-	if (exists($variable_slope->[0]) && exists($variable_slope->[1])) { 
-	    my $term = " (1+$variable_slope->[0] \| $variable_slope->[1]) ";
-	    $formatted_fixed_factors_interaction .= $term;
-	    push @addends, $formatted_variable_slope_factors;
+    my $formatted_variable_slope_intersects = "";
+    foreach my $variable_slope_groups (@$variable_slope_intersects) {
+	if (exists($variable_slope_groups->[0]) && exists($variable_slope_groups->[1])) { 
+	    my $term = " (1+$variable_slope_groups->[0] \| $variable_slope_groups->[1]) ";
+	    print STDERR "TERM: $term\n";
+	    $formatted_variable_slope_intersects .= $term;
+	    push @addends, $formatted_variable_slope_intersects;
 	}
     }
 

@@ -36,6 +36,10 @@ sub model_string: Path('/ajax/mixedmodels/modelstring') Args(0) {
     my $fixed_factors_interaction = $params->{fixed_factors_interaction};
 
     print STDERR "JSON for interaction: ".Dumper($fixed_factors_interaction)."\n";
+
+    my $variable_slope_intersects = $params->{variable_slope_intersects};
+
+    print STDERR "JSON for variable slope intersect: ".Dumper($variable_slope_intersects)."\n";
     
     my $random_factors = $params->{random_factors};
     my $dependent_variable = $params->{dependent_variable};
@@ -49,6 +53,9 @@ sub model_string: Path('/ajax/mixedmodels/modelstring') Args(0) {
     } 
     if ($fixed_factors_interaction) { 
 	$mm->fixed_factors_interaction( $fixed_factors_interaction );
+    }
+    if ($variable_slope_intersects) {
+	$mm->variable_slope_intersects( $variable_slope_intersects);
     }
     if ($random_factors) { 
 	$mm->random_factors( $random_factors );
