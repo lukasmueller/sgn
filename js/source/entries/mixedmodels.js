@@ -266,10 +266,10 @@ export function init(main_div){
 
    $('#run_mixed_model_button').click( function() { 
        var model = $('#model_string').text();
-       alert('Model: '+model);
+       //alert('Model: '+model);
        var tempfile = $('#tempfile').text();
        var dependent_variable = $('#dependent_variable_select').val();
-       alert(model + " "+tempfile+" "+ dependent_variable);
+       //alert(model + " "+tempfile+" "+ dependent_variable);
        $.ajax( {
            "url": '/ajax/mixedmodels/run',
 	   "method": "POST",
@@ -323,14 +323,14 @@ export function init(main_div){
     }
 
     function parse_simple_factors(simple_div) {
-	alert("parsing div "+simple_div);
-	alert($('#'+simple_div).html());
+	//alert("parsing div "+simple_div);
+	//alert($('#'+simple_div).html());
 	
 	var factors = $('#'+simple_div).children();
 	var factor_list = new Array();
 	for(var n=0; n<factors.length; n++) {
 	    var factor_string = $(factors[n]).text();
-	    alert("FACTOR = "+factor_string);
+	    //alert("FACTOR = "+factor_string);
 	    factor_string = factor_string.replace(/X /g, '');
 	    
 	    if (factor_string) {
@@ -356,25 +356,25 @@ export function init(main_div){
 	//
 
 	var collection_divs = $('#'+collection_div).children();
-	alert("COLLECTION PANEL: "+collection_div+" content: "+$('#'+collection_div).html());
+	//alert("COLLECTION PANEL: "+collection_div+" content: "+$('#'+collection_div).html());
 	var collection = new Array();
 	var grouped_factors = new Array();
 
-	alert("DIV COUNT = "+collection_divs.length);
+	//alert("DIV COUNT = "+collection_divs.length);
 	for (var i=1; i< collection_divs.length; i++) { // skip interaction_factors_collection panel header
 
 	    var $div = $(collection_divs[i]);
 
-	    alert("DIV = "+ $div.text()+" ID="+$div.attr('id'));
+	    //alert("DIV = "+ $div.text()+" ID="+$div.attr('id'));
 
 	    var top_panels = $div.children();
 
 	    for (var n=0; n< top_panels.length; n++) { 
-		alert('top_panel '+$(top_panels[n]).text()+ ' LEN:'+$(top_panels[n]).length +' ID: '+$(top_panels[n]).attr('id'));
+		//alert('top_panel '+$(top_panels[n]).text()+ ' LEN:'+$(top_panels[n]).length +' ID: '+$(top_panels[n]).attr('id'));
 		
 		var panel_components = $(top_panels[n]).children();
 		var $panel_body = $(panel_components[1]);
-		alert("parsing interaction body..."+$panel_body.text()+ " ID: " +$panel_body.attr('id'));
+		//alert("parsing interaction body..."+$panel_body.text()+ " ID: " +$panel_body.attr('id'));
 		
 		var factors = $panel_body.children();
 		
@@ -384,7 +384,7 @@ export function init(main_div){
 		    
 		    // remove X closing box
 		    label = label.substr(2);
-		    alert("FACTOR"+label);
+		    //alert("FACTOR"+label);
 		    grouped_factors.push(label);		
 		}
 		collection.push(grouped_factors);
@@ -393,7 +393,7 @@ export function init(main_div){
 	}
 					  
 	///var fixed_factors_interaction_collection = interaction_collection.join('"],["');
-	alert("finally: "+ JSON.stringify(collection));
+	//alert("finally: "+ JSON.stringify(collection));
 
 	var fixed_factors_interaction_json;
 	if (collection) {
