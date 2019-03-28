@@ -4,11 +4,18 @@ package CXGN::Trial::TrialDesign;
 
 CXGN::Trial::TrialDesign - a module to create a trial design using the R CRAN package Agricolae.
 
-
 =head1 USAGE
 
  my $trial_design = CXGN::Trial::TrialDesign->new();
-
+ $trial_design->set_trial_name("blabla");
+ $trial_design->set_stock_list( qw | A B C D |);
+ $trial_design->set_seedlot_hash(\%seedlothash);
+ $trial_design->set_control_list( qw | E F |);
+ $trial_design->set_number_of_blocks(3);
+ $trial_design->set_randomization_method("RCBD");
+ if ($trial_design->calculate_design()) {  # true if no error
+    $design = $trial_design->get_design();
+ }
 
 =head1 DESCRIPTION
 
@@ -217,6 +224,8 @@ sub _convert_plot_numbers {
   return \@plot_numbers;
 }
 
+# the function below should be split up and moved to the relevant plugin...
+#
 sub _build_plot_names {
     my $self = shift;
     my $design_ref = shift;
@@ -234,16 +243,16 @@ sub _build_plot_names {
 
     foreach my $key (keys %design) {
 	$trial_name ||="";
-  my $block_number = $design{$key}->{block_number};
+	my $block_number = $design{$key}->{block_number};
 	my $stock_name = $design{$key}->{stock_name};
 	my $rep_number = $design{$key}->{rep_number};
-  $design{$key}->{plot_number} = $key;
+	$design{$key}->{plot_number} = $key;
 
 	if ($self->get_design_type() eq "RCBD") { # as requested by IITA (Prasad)
-      my $plot_num_per_block = $design{$key}->{plot_num_per_block};
-      $design{$key}->{plot_number} = $design{$key}->{plot_num_per_block};
+	    my $plot_num_per_block = $design{$key}->{plot_num_per_block};
+	    $design{$key}->{plot_number} = $design{$key}->{plot_num_per_block};
 	    #$design{$key}->{plot_name} = $prefix.$trial_name."_rep_".$rep_number."_".$stock_name."_".$block_number."_".$plot_num_per_block."".$suffix;
-        $design{$key}->{plot_name} = $prefix.$trial_name."_rep".$rep_number."_".$stock_name."_".$plot_num_per_block."".$suffix;
+	    $design{$key}->{plot_name} = $prefix.$trial_name."_rep".$rep_number."_".$stock_name."_".$plot_num_per_block."".$suffix;
 	}
 	elsif ($self->get_design_type() eq "Augmented") {
 	    $design{$key}->{plot_name} = $prefix.$trial_name."_plotno".$key."_".$stock_name."_".$suffix;
