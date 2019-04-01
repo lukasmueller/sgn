@@ -11,39 +11,51 @@ export function init(main_div){
 	<div class="container">
 	<div class="row">
 	<div class="col-md-6">
-	
-	Choose a dataset: 
+
+        1. Choose a dataset
+
 	<span style="width:240px" id="mixed_model_dataset_select">
 	</span>
 	<button class="btn btn-main" id="mixed_model_analysis_prepare_button">Go!</button>
-	
-	
 	<br />
 	<br />
-	Choose dependent variable:<br />
-	<div id="dependent_variable">
+
+            <hr />
+        2. Select the dependent variable
+
+	<div id="dependent_variable" style="margin-bottom:50px">
+        [ select dataset first ]
 	</div>
 
     </div> <!-- row -->
 
-    <div class="col-md-6">
+	<div class="col-md-6">
+
 	<div id="trait_histogram">
 	  [Histogram]
-        </div>
+       </div>
+
 	</div>
 	</div> <!-- container -->
-	
-        
-	
+
+         3. Build model
+	<hr />
+	<div style="margin-left:30px; margin-right:30px;background-color:#FFEEEE;min-height:80px;padding-top:10px;padding-left:10px; padding-bottom:10px;border-radius:8px">
+	<div id="model_string" style="margin-top:10px;margin-bottom:10px;text-align:center;font-weight:bold">[model will appear here in lme4 format]</div>
+	<button id="store_model_formula" class="btn btn-default btn-sm">Save model</button>
+	</div>
+
+
+    <hr />	
 	<div class="container">
 	  <div class="row">
         <div id="left-margin" class="col-md-2"></div>
 	<div class="col-md-4">
-	<div id="model_string">[model]</div>
 	<div class="panel panel-default" style="border-width:0px">
 	<div class="panel panel-header" style="border-width:0px">Available Factors</div>
+	     <hr />
              <div id="factors" class="panel panel-body" style="border-style:dotted;border-width:0px;">
-	       Available factors
+	       [ Choose dataset and dependent variable first ]
              </div>
         </div>
 	</div>
@@ -55,7 +67,7 @@ export function init(main_div){
                 </div>
 	       <div id="interaction_factor_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
                    <div class="panel-header">
-	               Fixed factors with interaction
+	               Fixed factors with interaction<br />
                        <button  id="add_interaction_factor_button">add new interaction</button>
 	           </div>
 	           <div id="interaction_factors_collection" name="interaction_factors_collection" class="panel-body">
@@ -64,7 +76,7 @@ export function init(main_div){
 		<div id="variable_slope_intersect_collection_panel" class="panel panel-default" style="border-style:dotted;border-width:0px;margin-top:20px;height:auto;z-index:1" >
 
 	           <div class="panel-header">
-	              Fixed factors with variable slope/intersects
+	              Fixed factors with variable slope/intersects<br />
                       <button  id="add_variable_slope_intersect_button">add new variable slope/intersect</button>
 	            </div>
 	            <div id="variable_slope_intersect_collection" class="panel-body">
@@ -87,9 +99,16 @@ export function init(main_div){
         </div>
 
         <button style="position:relative;" id="run_mixed_model_button" class="btn btn-main">Go!</button>
-
+	<hr />
+	4. Results
+    
+        BLUPs
         <div id="mixed_models_results_div">
-	</div>`
+	[ go throught steps 1-3 first ]
+</div>
+	     <button id="store_blups_button">Save BLUPs</button>
+    </div>`
+
 
 	
     var mm = $(main_div);
