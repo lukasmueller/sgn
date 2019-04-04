@@ -13,7 +13,9 @@ __PACKAGE__->config(
     map => { 'application/json' => 'JSON', 'text/html' => 'JSON' },
    );
 
-sub store_analysis : Path('/ajax/analysis/store') Args(0) {
+sub store_analysis : Path('/ajax/analysis/store') ActionClass("REST") Args(0) {}
+
+sub store_analysis_POST {
     my $self = shift;
     my $c = shift;
     my $file = $c->req->param("file");
