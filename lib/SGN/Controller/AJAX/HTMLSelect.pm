@@ -383,8 +383,11 @@ sub get_label_data_source_select : Path('/ajax/html/select/label_data_sources') 
     my $default = $c->req->param("default") || 0;
 
     my $user_id = $c->user()->get_sp_person_id();
-    my $lists = CXGN::List::available_lists($c->dbc->dbh(), $user_id, 'plots');
-    my $public_lists = CXGN::List::available_public_lists($c->dbc->dbh(), 'plots');
+    my $plot_lists = CXGN::List::available_lists($c->dbc->dbh(), $user_id, 'plots');
+    my $public_plot_lists = CXGN::List::available_public_lists($c->dbc->dbh(), 'plots');
+
+    my $trial_lists = CXGN::List::available_lists($c->dbc->dbh(), $user_id, 'trials');
+    my $public_trial_lists = CXGN::List::available_public_lists($c->dbc->dbh(), 'trials');
 
     my $p = CXGN::BreedersToolbox::Projects->new( { schema => $c->dbic_schema("Bio::Chado::Schema") } );
     my $projects = $p->get_breeding_programs();
@@ -405,11 +408,19 @@ sub get_label_data_source_select : Path('/ajax/html/select/label_data_sources') 
 
     my @choices = [];
     push @choices, '__Your Plot Lists';
-    foreach my $item (@$lists) {
+    foreach my $item (@$plot_lists) {
         push @choices, [@$item[0], @$item[1]];
     }
     push @choices, '__Public Plot Lists';
-    foreach my $item (@$public_lists) {
+    foreach my $item (@$public_plot_lists) {
+        push @choices, [@$item[0], @$item[1]];
+    }
+    push @choices, '__Your Trial Lists';
+    foreach my $item (@$trial_lists) {
+        push @choices, [@$item[0], @$item[1]];
+    }
+    push @choices, '__Public Trial Lists';
+    foreach my $item (@$public_trial_lists) {
         push @choices, [@$item[0], @$item[1]];
     }
     push @choices, '__Field Trials';

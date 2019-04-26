@@ -31,9 +31,23 @@ __PACKAGE__->config(
         my $value = $c->req->param("value");
         my $data_level = $c->req->param("data_level");
         my %longest_hash;
+        my %reps;
         print STDERR "Data type is $data_type and id is $value\n";
 
         my ($trial_num, $trial_id, $plot_design, $plant_design, $subplot_design, $tissue_sample_design) = get_plot_data($c, $schema, $data_type, $value);
+
+        # if trial list, sort and return longest item
+        if ($data_type =~ m/Trial List/) {
+            my @sorted_items = sort keys %$plot_design;
+            $longest_hash{'trial_name'} = pop @sorted_items;
+            $reps{ 1 => 'rep_number'};
+            $c->stash->{rest} = {
+                fields => \%longest_hash,
+                reps => \%reps,
+            };
+            return;
+        }
+
 
        #if plant ids exist, use plant design
        my $design = $plot_design;
@@ -92,7 +106,6 @@ __PACKAGE__->config(
 
        #get all fields in this trials design
        my $random_plot = $design{(keys %design)[rand keys %design]};
-       my %reps;
        my @keys = keys %{$random_plot};
        foreach my $field (@keys) {
 
@@ -466,6 +479,11 @@ sub get_plot_data {
     # print STDERR "Data type is $data_type and value is $value\n";
 
     if ($data_type =~ m/Plant List/) {
+    }
+    if ($data_type =~ m/Trial List/) {
+        my $trial_data = SGN::Controller::AJAX::List->retrieve_list($c, $value);
+        my %name_hash = map { $_->[1] => {'trial_name' => $_->[1]} } @$trial_data;
+        $plot_design = \%name_hash;
     }
     elsif ($data_type =~ m/Plot List/) {
         # get items from list, get trial id from plot id. Or, get plot data one by one
