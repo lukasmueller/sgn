@@ -178,6 +178,7 @@ my $build = SGN::Build->new(
         'YAML::Any'                                => 0,
 	'R::YapRI'                                 => 0,
         'WWW::Mechanize::TreeBuilder'              => 0,
+	'WWW::Form::UrlEncoded::XS'                => 0.25,
     },
 );
 
